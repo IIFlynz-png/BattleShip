@@ -65,17 +65,14 @@ string getString(const char name) {
     return "corazzata";
   } else if (name == 'I') {
     return "incrociatore";
-  } else if (name == 'D') {
+  } else if (name == 'D' || name == 'N') { // CACCIATORPEDINIERE E CACCIATORPEDINIERE X
     return "cacciatorpediniere";
-  } else if (name == 'N') {
-    return "cacciatorpedinierex";
-  } else if (name == 'S') {
+  } else if (name == 'S' || name == 'R') { // SOTTOMARINO E SOTTOMARINO X
     return "sottomarino";
-  } else if (name == 'R') {
-    return "sottomarinox";
   }
   return "error";
 }
+
 
 string getOrientation() {
   string orientation;
@@ -368,13 +365,13 @@ void Player::strikeBoard(Player *player, Player *enemy) {
   if (enemy->board[x][y] == 'O') { // CASE 1 PLAYER HITS THE TARGET
     // Gestiamo tutte le board
     enemy->board[x][y] = '@';
-    this->boardMem[x][y] = '@';
+    player->boardMem[x][y] = '@';
     enemy->boardSunk[x][y] = '@';
     // Comunicazione al giocatore
     cout << "BINGO! Ha fatto centro signor capitano " << endl;
   } else if (enemy->board[x][y] == '~') { // CASE 2 PLAYER HITS WATER
     enemy->board[x][y] = 'X';
-    this->boardMem[x][y] = 'X';
+    player->boardMem[x][y] = 'X';
     // Comunicazione col giocatore
     cout << "DANNAZIONE! Abbiamo colpito il mare signor capitano " << endl;
   } else if (enemy->board[x][y] =='@') { // CASE 3 PLAYER HITS A SUNKEN PORTION OF A SHIP
