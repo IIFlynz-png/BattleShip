@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#include <chrono>
+#include <random>
 
 using namespace std;
 
@@ -586,7 +588,136 @@ void Player::startGame() {
     gameLoop(&player1, &player2);
 }
 
+// FUNZIONE PER GENERARE COORDINATE CASUALI (0-9)
 
+int getRandCoords() {
+  // Seed basato sul tempo corrente ad alta risoluzione
+  unsigned seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  std::mt19937 generator(seed); // Mersenne Twister per una migliore casualità
+  std::uniform_int_distribution<int> distribution(0, 9);
+  return distribution(generator);
+}
+
+// FUNZIONE PER GENERARE CONFIGURAZIONE CASUALE ("verticale" o "orizzontale")
+string getRandConfig() {
+  // Seed basato sul tempo corrente ad alta risoluzione
+  unsigned seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  std::mt19937 generator(seed); // Mersenne Twister per una migliore casualità
+  std::uniform_int_distribution<int> distribution(1, 2);
+  int num = distribution(generator);
+  return (num == 1) ? "verticale" : "orizzontale";
+}
+
+void Player::autoPlacement(Player *player) {
+  // PER TUTTE LE NAVI
+  int x,y ;
+
+  for (int i = 0; i < 7; ++i) {
+    // Scelta della nave da posizionare
+    string shiptype = shiplist[i];
+    // Ottengo orientamento della nave
+    string config = getRandConfig();
+
+    char type = getChar(shiptype);
+    bool validCoords = false;
+    int lenght = shipSize(shiptype);
+
+    while (!validCoords) {
+        x = getRandCoords();
+        y = getRandCoords();
+
+        if (x >= 0 && x < 10 && y >= 0 && y < 10) {
+            bool isOverlapping = false;
+            if (config == "verticale") {
+                if (x + lenght < 10) { // Controllo corretto per il limite verticale
+                    for (int i = 0; i < lenght; i++) {
+                        if (this->board[x + i][y] != '~') {
+                            isOverlapping = true;
+                            break;
+                        }
+                    }
+                    if (!isOverlapping) {
+                        validCoords = true;
+                    } else {
+
+                    }
+                } else {
+
+                }
+            } else if (config == "orizzontale") {
+                if (y + lenght < 10) { // Controllo corretto per il limite orizzontale
+                    for (int i = 0; i < lenght; i++) {
+                        if (this->board[x][y + i] != '~') {
+                            isOverlapping = true;
+                            break;
+                        }
+                    }
+                    if (!isOverlapping) {
+                        validCoords = true;
+                    } else {
+
+                    }
+                } else {
+
+                }
+            }
+        } else {
+
+        }
+    }
+
+    // Piazzare la nave sulla griglia
+    if (config == "orizzontale") {
+        for (int i = 0; i < lenght; i++) {
+            this->board[x][y + i] = 'O'; // Posizionamento orizzontale corretto
+            this->boardSunk[x][y + i] = type;
+        }
+    } else if (config == "verticale") {
+        for (int i = 0; i < lenght; i++) {
+            this->board[x + i][y] = 'O'; // Posizionamento verticale corretto
+            this->boardSunk[x + i][y] = type;
+        }
+    }
+
+
+  }
+}
+
+// Implementazione della funzione per stampare la mappa principale (board)
+void Player::stampaBoard() const {
+  cout << "Mappa principale (board):\n";
+  // Utilizzare un doppio ciclo per scorrere la board e stampare ogni casella
+  for (int i = 0; i < 10; ++i) {
+    for (int j = 0; j < 10; ++j) {
+      cout << board[i][j] << " ";
+    }
+    cout << endl;
+  }
+}
+
+// Implementazione della funzione per stampare la mappa della memoria (boardMem)
+void Player::stampaBoardMem() const {
+  cout << "Mappa della memoria (boardMem):\n";
+  // Utilizzare un doppio ciclo per scorrere la boardMem e stampare ogni casella
+  for (int i = 0; i < 10; ++i) {
+    for (int j = 0; j < 10; ++j) {
+      cout << boardMem[i][j] << " ";
+    }
+    cout << endl;
+  }
+}
+
+// Implementazione della funzione per stampare la mappa delle navi affondate (boardSunk)
+void Player::stampaBoardSunk() const {
+  cout << "Mappa delle navi affondate (boardSunk):\n";
+  // Utilizzare un doppio ciclo per scorrere la boardSunk e stampare ogni casella
+  for (int i = 0; i < 10; ++i) {
+    for (int j = 0; j < 10; ++j) {
+      cout << boardSunk[i][j] << " ";
+    }
+    cout << endl;
+  }
+}
 
 
 /* Navi

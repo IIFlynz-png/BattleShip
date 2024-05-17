@@ -1,6 +1,6 @@
 #ifndef BATTLESHIP_H
 #define BATTLESHIP_H
-
+#include <chrono>
 #include <iostream>
 #include <string>
 #include <algorithm>
@@ -9,6 +9,7 @@ using namespace std;
 
 const bool CONFIRM_NEXT_TURN = true;
 void clearScreen();
+
 class Player {
 private:
     int number;
@@ -43,8 +44,12 @@ public:
     void turno(Player *player, Player *enemy);
     bool checkWin(const Player *player);
     static void startGame();
-
+    void autoPlacement(Player *player);
+    void stampaBoard() const;
+    void stampaBoardMem() const;
+    void stampaBoardSunk() const;
     friend void gameLoop(Player *player1, Player *player2);
+
 };
 
 string lowerString(const string &str);
@@ -54,5 +59,7 @@ string getString(const char name);
 string getOrientation();
 void replace(char board[10][10], const char replacedChar, const char newChar);
 void gameLoop(Player *player1, Player *player2);
+int getRandCoords();
+string getRandConfig() ;
 
 #endif // BATTLESHIP_H
