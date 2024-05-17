@@ -434,6 +434,7 @@ string Player::isSank(Player *player) const {
         for (int j = 0; j < 7; j++) {
           if (this->missingShips[j] == "O") {
             player->missingShips[j] = ship;
+            cout << "Abbiamo affondato questa imbarcazione: " << getString(type) << "!" << endl;
             return ship;
           }
         }
