@@ -1,7 +1,10 @@
 #include <iostream>
+#include "game_engine.h" // Assicurati di includere il file header corretto
 
-int main()
-{
-    std::cout << "Hello, World!" << std::endl;
+int main() {
+    // Avvia il gioco
+    Player player;
+    player.startGame();
+
     return 0;
 }
