@@ -408,6 +408,8 @@ void replace(char board[10][10], const char replacedChar, const char newChar) {
 
 
 
+
+
 // FUNZIONE PER CONTROLLARE SE UNA NAVE SAREBBE AFFONDATA
 string Player::isSank(Player *player) const {
   // LOOKING FOR SOMETHING MISSING
@@ -481,6 +483,8 @@ bool Player::isHorizontal(int row, int col, char type, int shipLength) const {
   return true;
 }
 
+
+
 // UPDATE HEADER FILE
 
 // FUNZIONE PER VERIFICARE LA VINCITA
@@ -496,7 +500,6 @@ bool Player::checkWin(const Player *player) {
 
 
 void Player::turno(Player *player, Player *enemy) {
-
   string sunkenOne = "";
   cout << "TURNO DEL GIOCATORE: " << player->name << endl;
 
@@ -516,6 +519,14 @@ void Player::turno(Player *player, Player *enemy) {
   }
 
   cout << "Fine del turno di " << player->name << "." << endl;
+
+  if (CONFIRM_NEXT_TURN) {
+    cout << "Premi INVIO per passare al turno successivo..." << endl;
+    cin.ignore();  // Ignora i caratteri rimanenti nel buffer
+    string dummy;
+    getline(cin, dummy);  // Attendi l'input dell'utente
+  }
+
   cout << "-----------------------------------" << endl;
 }
 

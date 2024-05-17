@@ -7,9 +7,8 @@
 
 using namespace std;
 
+const bool CONFIRM_NEXT_TURN = true;
 void clearScreen();
-
-
 class Player {
 private:
     int number;
