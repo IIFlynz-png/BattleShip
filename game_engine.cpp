@@ -88,6 +88,65 @@ string getOrientation() {
   return orientation;
 }
 
+void Player::stampaBoardAndMem(Player *player) {
+  // Stampa la mappa del giocatore
+  cout << "La tua mappa:" << endl;
+  cout << "   ";
+  for (int c = 0; c < 10; c++) {
+    cout << " " << c;
+  }
+  cout << endl;
+  cout << "  ";
+  for (int i = 0; i < 10; i++) {
+    cout << "===";
+  }
+  cout << "===" << endl;
+
+  for (int i = 0; i < 10; i++) {
+    cout << i << " ";
+    cout << "|";
+    for (int j = 0; j < 10; j++) {
+      cout << " " << player->board[i][j];
+    }
+    cout << " |" << endl;
+  }
+
+  cout << "  ";
+  for (int i = 0; i < 10; i++) {
+    cout << "===";
+  }
+  cout << "===" << endl;
+
+  // Stampa la mappa della memoria del giocatore
+  cout << "Cosa sappiamo sull'avversario:" << endl;
+  cout << "   ";
+  for (int c = 0; c < 10; c++) {
+    cout << " " << c;
+  }
+  cout << endl;
+  cout << "  ";
+  for (int i = 0; i < 10; i++) {
+    cout << "===";
+  }
+  cout << "===" << endl;
+
+  for (int i = 0; i < 10; i++) {
+    cout << i << " ";
+    cout << "|";
+    for (int j = 0; j < 10; j++) {
+      cout << " " << player->boardMem[i][j];
+    }
+    cout << " |" << endl;
+  }
+
+  cout << "  ";
+  for (int i = 0; i < 10; i++) {
+    cout << "===";
+  }
+  cout << "===" << endl;
+}
+
+
 // player INTERFACE
 void Player::stampa(char M[10][10]) { // Aiuto del signor GPT in questa parte per lo stile
   clearScreen();
@@ -401,16 +460,13 @@ bool Player::checkWin(const Player *player) {
 }
 
 
-// FUNZIONE TURNO
-
 void Player::turno(Player *player, Player *enemy) {
-  clearScreen();
+
   string sunkenOne = "";
   cout << "TURNO DEL GIOCATORE: " << player->name << endl;
-  cout << "La tua mappa:" << endl;
-  stampa(player->board);
-  cout << "Cosa sappiamo sull'avversario:" << endl;
-  stampa(enemy->boardMem);
+
+  // Utilizzare la nuova funzione per stampare entrambe le mappe
+  player->stampaBoardAndMem(player);
 
   player->strikeBoard(player, enemy);
 
@@ -426,62 +482,62 @@ void Player::turno(Player *player, Player *enemy) {
 
   cout << "Fine del turno di " << player->name << "." << endl;
   cout << "-----------------------------------" << endl;
-
 }
 
 void gameLoop(Player *player1, Player *player2) {
-  clearScreen();
-  bool game_over = false;
-  Player *current_player = player1;
-  Player *opponent = player2;
+    clearScreen();
+    bool game_over = false;
+    Player *current_player = player1;
+    Player *opponent = player2;
 
-  while (!game_over) {
-    // Turno del giocatore corrente
-    current_player->turno(current_player, opponent);
+    while (!game_over) {
+        // Turno del giocatore corrente
+        current_player->turno(current_player, opponent);
 
-    // Scambio dei ruoli dei giocatori per il turno successivo
-    swap(current_player, opponent);
+        // Scambio dei ruoli dei giocatori per il turno successivo
+        swap(current_player, opponent);
 
-    // Verifica se la partita e' finita
-    if (current_player->checkWin(opponent)) {
-      cout << "Partita finita! " << current_player->name << " ha vinto!" << endl;
-      game_over = true;
+        // Verifica se la partita è finita
+        if (current_player->checkWin(opponent)) {
+            cout << "Partita finita! " << current_player->name << " ha vinto!" << endl;
+            game_over = true;
+        }
     }
-  }
 }
 
-
 void Player::startGame() {
-  char answer;
-  // Creazione dei giocatori
-  Player player1(1, "Player 1");
-  Player player2(2, "Player 2");
+    char answer;
+    // Creazione dei giocatori
+    Player player1(1, "Player 1");
+    Player player2(2, "Player 2");
 
-  // Presentazione delle istruzioni del gioco
-  cout << "Benvenuti al gioco della battaglia navale!" << endl;
-  cout << "I giocatori si alterneranno per posizionare le proprie navi sulla griglia." << endl;
-  cout << "Una volta posizionate le navi, inizia il gioco e i giocatori si alterneranno nei turni per cercare di colpire le navi nemiche." << endl;
-  cout << "Il primo giocatore a affondare tutte le navi dell'avversario vince il gioco." << endl;
-  cout << "Pronti alla battaglia signori ? (Y)" << endl;
-  cin >> answer ;
-  clearScreen();
+    // Presentazione delle istruzioni del gioco
+    cout << "Benvenuti al gioco della battaglia navale!" << endl;
+    cout << "I giocatori si alterneranno per posizionare le proprie navi sulla griglia." << endl;
+    cout << "Una volta posizionate le navi, inizia il gioco e i giocatori si alterneranno nei turni per cercare di colpire le navi nemiche." << endl;
+    cout << "Il primo giocatore a affondare tutte le navi dell'avversario vince il gioco." << endl;
+    cout << "Pronti alla battaglia signori ? (Y)" << endl;
+    cin >> answer;
+    clearScreen();
 
-  // Inizio del gioco
-  cout << "Inizia il posizionamento delle navi per il Player 1" << endl;
-  for (int i = 0; i < 7; ++i) {
-    string shipType = player1.scegliNave(&player1);
-    player1.HandlePlacement(&player1, shipType);
-    player1.stampa(player1.board);
-  }
-  cout << "Inizia il posizionamento delle navi per il Player 2" << endl;
-  for (int i = 0; i < 7; ++i) {
-    string shipType = player2.scegliNave(&player2);
-    player2.HandlePlacement(&player2, shipType);
-    player2.stampa(player2.board);
-  }
+    // Inizio del gioco
+    cout << "Inizia il posizionamento delle navi per il Player 1" << endl;
+    for (int i = 0; i < 7; ++i) {
+        string shipType = player1.scegliNave(&player1);
+        player1.HandlePlacement(&player1, shipType);
+        player1.stampa(player1.board);
+    }
+    clearScreen();  // Clear screen to prevent Player 2 from seeing Player 1's board
 
-  // Avvio del loop di gioco
-  gameLoop(&player1, &player2);
+    cout << "Inizia il posizionamento delle navi per il Player 2" << endl;
+    for (int i = 0; i < 7; ++i) {
+        string shipType = player2.scegliNave(&player2);
+        player2.HandlePlacement(&player2, shipType);
+        player2.stampa(player2.board);
+    }
+
+    // Avvio del loop di gioco
+    gameLoop(&player1, &player2);
 }
 
 

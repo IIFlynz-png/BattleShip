@@ -34,6 +34,7 @@ public:
     Player();
     Player(const int playerNumber, const string &playerName);
     void stampa(char M[10][10]);
+    void stampaBoardAndMem(Player *player);
     string scegliNave(Player *player);
     void HandlePlacement(Player *player, const string &shiptype);
     void strikeBoard(Player *player, Player *enemy);
