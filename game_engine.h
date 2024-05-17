@@ -36,6 +36,7 @@ public:
     void stampa(char M[10][10]);
     void stampaBoardAndMem(Player *player);
     string scegliNave(Player *player);
+    bool isHorizontal(int row, int col, char type, int shipLength) const;
     void HandlePlacement(Player *player, const string &shiptype);
     void strikeBoard(Player *player, Player *enemy);
     string isSank(Player *player) const;

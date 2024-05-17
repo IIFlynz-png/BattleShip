@@ -411,37 +411,74 @@ void replace(char board[10][10], const char replacedChar, const char newChar) {
 // FUNZIONE PER CONTROLLARE SE UNA NAVE SAREBBE AFFONDATA
 string Player::isSank(Player *player) const {
   // LOOKING FOR SOMETHING MISSING
-  for (int i = 0; i < 7; i++) {
-    string ship = shiplist[i];
-    char type = getChar(ship);
-    // CHECK IF THE SHIP WE ARE CONTROLLING IS ALREADY SUNKEN
-    if (!player->alreadyMissing(player, ship)) {
-      int found = 0;
-      for (int righe = 0; righe < 10; righe++) {
-        for (int colonne = 0; colonne < 10; colonne++) {
-          if (this->boardSunk[righe][colonne] == type) {
-            found++;
-          }
-        }
-      }
-      // IF SHIP HAS BEEN SUNKED
-      if (found == 0) {
-        // HANDLE PLAYER BOARDS CHAR REPLACEMENT
-        replace(player->board, type, '#');
-        replace(player->boardSunk, type, '#');
+  for (int i = 0; i < 10; i++) {
+    for (int j = 0; j < 10; j++) {
+      char type = this->boardSunk[i][j];
+      if (type != '~' && type != '#') {
+        string shipName = getString(type);
+        // CHECK IF THE SHIP WE ARE CONTROLLING IS ALREADY SUNKEN
+        if (!player->alreadyMissing(player, shipName)) {
+          int shipLength = shipSize(shipName);
+          bool isSunk = true;
+          int startRow = i, startCol = j;
+          bool foundStart = false;
 
-        // UPDATE THE MISSING LIST
-        for (int j = 0; j < 7; j++) {
-          if (this->missingShips[j] == "O") {
-            player->missingShips[j] = ship;
-            cout << "Abbiamo affondato questa imbarcazione: " << getString(type) << "!" << endl;
-            return ship;
+          // Find the starting position of the ship
+          for (int r = 0; r < 10; r++) {
+            for (int c = 0; c < 10; c++) {
+              if (this->boardSunk[r][c] == type) {
+                startRow = r;
+                startCol = c;
+                foundStart = true;
+                break;
+              }
+            }
+            if (foundStart) break;
+          }
+
+          // Check if the ship is sunk
+          for (int k = 0; k < shipLength; k++) {
+            int row = startRow, col = startCol;
+            if (isHorizontal(startRow, startCol, type, shipLength)) {
+              col += k;
+            } else {
+              row += k;
+            }
+            if (this->boardSunk[row][col] != '@') {
+              isSunk = false;
+              break;
+            }
+          }
+
+          // IF SHIP HAS BEEN SUNKEN
+          if (isSunk) {
+            // HANDLE PLAYER BOARDS CHAR REPLACEMENT
+            replace(player->board, type, '#');
+            replace(player->boardSunk, type, '#');
+
+            // UPDATE THE MISSING LIST
+            for (int k = 0; k < 7; k++) {
+              if (this->missingShips[k] == "O") {
+                player->missingShips[k] = shipName;
+                cout << "Abbiamo affondato questa imbarcazione: " << shipName << "!" << endl;
+                return shipName;
+              }
+            }
           }
         }
       }
     }
   }
   return "error";
+}
+
+bool Player::isHorizontal(int row, int col, char type, int shipLength) const {
+  for (int i = 0; i < shipLength; i++) {
+    if (row + i >= 10 || this->boardSunk[row + i][col] != type) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // UPDATE HEADER FILE
