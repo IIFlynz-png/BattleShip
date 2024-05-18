@@ -564,24 +564,38 @@ void Player::startGame() {
     cout << "I giocatori si alterneranno per posizionare le proprie navi sulla griglia." << endl;
     cout << "Una volta posizionate le navi, inizia il gioco e i giocatori si alterneranno nei turni per cercare di colpire le navi nemiche." << endl;
     cout << "Il primo giocatore a affondare tutte le navi dell'avversario vince il gioco." << endl;
-    cout << "Pronti alla battaglia signori ? (Y)" << endl;
-    cin >> answer;
+
+    // Chiedi all'utente se vuole posizionare le navi manualmente o automaticamente
+    if (!AUTO_PLACEMENT) {
+        cout << "Vuoi posizionare le navi manualmente (M) o automaticamente (A)? ";
+        cin >> answer;
+        answer = tolower(answer);
+    } else {
+        answer = 'a'; // Imposta il posizionamento automatico se AUTO_PLACEMENT è true
+    }
+
     clearScreen();
 
     // Inizio del gioco
-    cout << "Inizia il posizionamento delle navi per il Player 1" << endl;
-    for (int i = 0; i < 7; ++i) {
-        string shipType = player1.scegliNave(&player1);
-        player1.HandlePlacement(&player1, shipType);
-        player1.stampa(player1.board);
-    }
-    clearScreen();  // Clear screen to prevent Player 2 from seeing Player 1's board
+    if (answer == 'm') {
+        cout << "Inizia il posizionamento delle navi per il Player 1" << endl;
+        for (int i = 0; i < 7; ++i) {
+            string shipType = player1.scegliNave(&player1);
+            player1.HandlePlacement(&player1, shipType);
+            player1.stampa(player1.board);
+        }
+        clearScreen();  // Clear screen to prevent Player 2 from seeing Player 1's board
 
-    cout << "Inizia il posizionamento delle navi per il Player 2" << endl;
-    for (int i = 0; i < 7; ++i) {
-        string shipType = player2.scegliNave(&player2);
-        player2.HandlePlacement(&player2, shipType);
-        player2.stampa(player2.board);
+        cout << "Inizia il posizionamento delle navi per il Player 2" << endl;
+        for (int i = 0; i < 7; ++i) {
+            string shipType = player2.scegliNave(&player2);
+            player2.HandlePlacement(&player2, shipType);
+            player2.stampa(player2.board);
+        }
+    } else {
+        // Posizionamento automatico delle navi
+        player1.autoPlacement(&player1);
+        player2.autoPlacement(&player2);
     }
 
     // Avvio del loop di gioco

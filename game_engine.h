@@ -8,6 +8,8 @@
 using namespace std;
 
 const bool CONFIRM_NEXT_TURN = true;
+const bool AUTO_PLACEMENT = true;
+
 void clearScreen();
 
 class Player {
