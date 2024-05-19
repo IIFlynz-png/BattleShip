@@ -450,13 +450,16 @@ string Player::isSank(Player *player) const {
 
 // FUNZIONE PER VERIFICARE LA VINCITA
 bool Player::checkWin(const Player *player) {
-  // CHECK IF ALL SHIPS ARE SUNKEN
-  for (int i = 0 ; i < 7; i++) {
-    if (player->missingShips[i] == "O") { // INIZIALMENTENE VOLEVO CONTROLLARE TUTTA LA MATRICE MA POI HO UTILIZZATO QUESTO METODO
-      return false;
+    // Check if there are any characters other than '~', 'X', or '@' in the player's board
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            char cell = player->board[i][j];
+            if (cell != '~' && cell != 'X' && cell != '@') {
+                return false;
+            }
+        }
     }
-  }
-  return true;
+    return true;
 }
 
 void confirmNextTurn() {
@@ -471,7 +474,7 @@ void confirmNextTurn() {
 
 
 
-void Player::turno(Player *player, Player *enemy) {
+void  Player::turno(Player *player, Player *enemy) {
     string sunkenOne = "";
     cout << "TURNO DEL GIOCATORE: " << player->name << endl;
 
@@ -487,7 +490,7 @@ void Player::turno(Player *player, Player *enemy) {
 
     if (player->checkWin(enemy)) {
         cout << "Congratulazioni, " << player->name << "! Hai vinto la partita!" << endl;
-        return;
+        return ;
     }
 
     cout << "Fine del turno di " << player->name << "." << endl;
@@ -527,7 +530,7 @@ void gameLoop(Player *player1, Player *player2) {
         swap(current_player, opponent);
 
         // Verifica se la partita è finita
-        if (current_player->checkWin(opponent)) {
+        if (current_player->checkWin(current_player)) {
             cout << "Partita finita! " << current_player->name << " ha vinto!" << endl;
             game_over = true;
         }

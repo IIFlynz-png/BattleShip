@@ -7,7 +7,7 @@
 
 using namespace std;
 
-const bool CONFIRM_NEXT_TURN = true;
+const bool CONFIRM_NEXT_TURN = false;
 const bool AUTO_PLACEMENT = true;
 
 void confirmNextTurn();
@@ -66,3 +66,5 @@ int getRandCoords();
 string getRandConfig() ;
 
 #endif // BATTLESHIP_H
+
+//TODO DICE AFFONDATO SOTTOMARINOX
