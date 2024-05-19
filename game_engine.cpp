@@ -489,7 +489,6 @@ void  Player::turno(Player *player, Player *enemy) {
     }
 
     if (player->checkWin(enemy)) {
-        cout << "Congratulazioni, " << player->name << "! Hai vinto la partita!" << endl;
         return ;
     }
 
@@ -530,7 +529,7 @@ void gameLoop(Player *player1, Player *player2) {
         swap(current_player, opponent);
 
         // Verifica se la partita è finita
-        if (current_player->checkWin(current_player)) {
+        if (current_player->checkWin(opponent)) {
             cout << "Partita finita! " << current_player->name << " ha vinto!" << endl;
             game_over = true;
         }
