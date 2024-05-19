@@ -7,12 +7,16 @@
 
 using namespace std;
 
-const bool CONFIRM_NEXT_TURN = true;
-const bool AUTO_PLACEMENT = true;
+extern bool CONFIRM_NEXT_TURN;
+extern bool AUTO_PLACEMENT;
+extern bool CONTINUOUS_TURNS;
+
 
 void confirmNextTurn();
 void clearScreen();
-
+void displayMenu();
+void displayRules();
+void displaySettings();
 class Player {
 private:
     int number;
@@ -41,7 +45,7 @@ public:
     string scegliNave(Player *player);
     bool isHorizontal(int row, int col, char type, int shipLength) const;
     void HandlePlacement(Player *player, const string &shiptype);
-    void strikeBoard(Player *player, Player *enemy);
+    char strikeBoard(Player *player, Player *enemy);
     string isSank(Player *player) const;
     static bool alreadyMissing(const Player *player, const string &name);
     void turno(Player *player, Player *enemy);
@@ -68,3 +72,4 @@ string getRandConfig() ;
 #endif // BATTLESHIP_H
 
 //TODO DICE AFFONDATO SOTTOMARINOX
+// QUANDO METTO LE NAVI AUTO NON LO CHIEDE AD ENTRAMBI I PLAYER E NON DICE IL NOME

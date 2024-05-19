@@ -6,11 +6,88 @@
 #include <chrono>
 #include <random>
 
+
+bool CONTINUOUS_TURNS = true;   // Initial value
+bool AUTO_PLACEMENT = false;    // Initial value
+bool CONFIRM_NEXT_TURN = true;  // Initial value
+
+
 using namespace std;
 
 string shiplist[7] = {
     "portaerei","corazzata",   "incrociatore", "cacciatorpediniere",
     "cacciatorpedinierex", "sottomarino", "sottomarinox"};
+
+void displayMenu() {
+    cout << "______         _    _                  _  _          _   _                       _       " << endl;
+    cout << "| ___ \\       | |  | |                | |(_)        | \\ | |                     | |      " << endl;
+    cout << "| |_/ /  __ _ | |_ | |_   __ _   __ _ | | _   __ _  |  \\| |  __ _ __   __  __ _ | |  ___ " << endl;
+    cout << "| ___ \\ / _` || __|| __| / _` | / _` || || | / _` | | . ` | / _` |\\ \\ / / / _` || | / _ \\" << endl;
+    cout << "| |_/ /| (_| || |_ | |_ | (_| || (_| || || || (_| | | |\\  || (_| | \\ V / | (_| || ||  __/" << endl;
+    cout << "\\____/  \\__,_| \\__| \\__| \\__,_| \\__, ||_||_| \\__,_| \\_| \\_/ \\__,_|  \\_/   \\__,_||_| \\___|" << endl;
+    cout << "                                 __/ |                                                   " << endl;
+    cout << "                                |___/                                                    " << endl;
+    cout << endl;
+    cout << "------------------------------------" << endl;
+    cout << "1. Regole" << endl;
+    cout << "2. Gioca" << endl;
+    cout << "3. Impostazioni" << endl;
+    cout << "4. Esci" << endl;
+    cout << "------------------------------------" << endl;
+    cout << "Seleziona un'opzione: ";
+}
+
+void displayRules() {
+    cout << "Regole del gioco:" << endl;
+    cout << "- Ogni giocatore ha una flotta di 7 navi:" << endl;
+    cout << "  1 Portaerei (5 celle) - 'P'" << endl;
+    cout << "  1 Corazzata (4 celle) - 'C'" << endl;
+    cout << "  1 Incrociatore (3 celle) - 'I'" << endl;
+    cout << "  1 Cacciatorpediniere (3 celle) - 'D'" << endl;
+    cout << "  1 Cacciatorpedinierex (3 celle) - 'N'" << endl;
+    cout << "  1 Sottomarino (2 celle) - 'S'" << endl;
+    cout << "  1 Sottomarinox (2 celle) - 'R'" << endl;
+    cout << "- Le navi possono essere posizionate orizzontalmente o verticalmente sulla griglia." << endl;
+    cout << "- I giocatori si alternano sparando un colpo alla volta." << endl;
+    cout << "- Se un colpo colpisce una nave, viene segnato con '@'." << endl;
+    cout << "- Se un colpo colpisce l'acqua, viene segnato con 'X'." << endl;
+    cout << "- Quando una nave viene affondata, tutte le sue celle vengono segnate con '#'." << endl;
+    cout << "- Il primo giocatore che affonda tutte le navi dell'avversario vince il gioco." << endl;
+    cout << "Premi INVIO per tornare al menu principale..." << endl;
+    cin.ignore();
+    string dummy;
+    getline(cin, dummy);
+}
+
+void displaySettings() {
+    cout << "Impostazioni:" << endl;
+    cout << "1. Conferma per il turno successivo: " << (CONFIRM_NEXT_TURN ? "Attivo" : "Disattivo") << endl;
+    cout << "2. Posizionamento automatico delle navi: " << (AUTO_PLACEMENT ? "Attivo" : "Disattivo") << endl;
+    cout << "3. Turni continui: " << (CONTINUOUS_TURNS ? "Attivo" : "Disattivo") << endl;
+    cout << "Seleziona un'opzione per modificarla (0 per uscire): ";
+
+    int choice;
+    cin >> choice;
+
+    switch (choice) {
+        case 1:
+            CONFIRM_NEXT_TURN = !CONFIRM_NEXT_TURN;
+        break;
+        case 2:
+            AUTO_PLACEMENT = !AUTO_PLACEMENT;
+        break;
+        case 3:
+            CONTINUOUS_TURNS = !CONTINUOUS_TURNS;
+        break;
+        case 0:
+            return;
+        default:
+            cout << "Opzione non valida. Riprova." << endl;
+        break;
+    }
+
+    displaySettings(); // Mostra nuovamente le impostazioni
+}
 
 string lowerString(const string &str) {
   string result = str;
@@ -351,7 +428,7 @@ void Player::HandlePlacement(Player *player, const string &shiptype) {
 }
 
 
-void Player::strikeBoard(Player *player, Player *enemy) {
+char Player::strikeBoard(Player *player, Player *enemy) {
   // Scelta le coordinate
   int x, y;
   do {
@@ -368,21 +445,26 @@ void Player::strikeBoard(Player *player, Player *enemy) {
     // Gestiamo tutte le board
     enemy->board[x][y] = '@';
     player->boardMem[x][y] = '@';
+      return '@';
     // Comunicazione al giocatore
     cout << "BINGO! Ha fatto centro signor capitano " << endl;
   } else if (enemy->board[x][y] == '~') { // CASE 2 PLAYER HITS WATER
     enemy->board[x][y] = 'X';
     player->boardMem[x][y] = 'X';
+      return 'X';
     // Comunicazione col giocatore
     cout << "DANNAZIONE! Abbiamo colpito il mare signor capitano " << endl;
   } else if (enemy->board[x][y] =='@') { // CASE 3 PLAYER HITS A SUNKEN PORTION OF A SHIP
     cout << "SIGNORE CHE COSA FA ?!!?! Abbiamo gia affondato quella porzione di nave, spari altrove !"
          << endl;
+    return 'X';
   } else { // CASE 4 PLAYER HITS AN ALREADY SHOT PORTION OF WATER
     cout << "SIGNORE CHE COSA FA ?!!?! Abbiamo gia visto che non c'e un bel niente in quel punto, spari altrove !"
          << endl;
-  }
+  } return 'X';
+
 }
+
 
 // INIZIALIZZA LA LISTA-SPARITI USA IL COSTRUTTORE
 
@@ -474,22 +556,35 @@ void confirmNextTurn() {
 
 
 
-void  Player::turno(Player *player, Player *enemy) {
+void Player::turno(Player *player, Player *enemy) {
     string sunkenOne = "";
     cout << "TURNO DEL GIOCATORE: " << player->name << endl;
 
     // Utilizzare la nuova funzione per stampare entrambe le mappe
     player->stampaBoardAndMem(player);
 
-    player->strikeBoard(player, enemy);
+    bool keepTurn = true; // Flag per continuare il turno
 
-    sunkenOne = player->isSank(enemy);
-    if (sunkenOne != "error") {
-        cout << "Abbiamo affondato questa imbarcazione: " << sunkenOne << "!" << endl;
-    }
+    while (keepTurn) {
+        char result = player->strikeBoard(player, enemy);
 
-    if (player->checkWin(enemy)) {
-        return ;
+        sunkenOne = player->isSank(enemy);
+        if (sunkenOne != "error") {
+            cout << "Abbiamo affondato questa imbarcazione: " << sunkenOne << "!" << endl;
+        }
+
+        // Verifica la vittoria prima di passare al turno successivo
+        if (player->checkWin(enemy)) {
+            cout << "Partita finita! " << player->name << " ha vinto!" << endl;
+            return;
+        }
+
+        // Determina se il turno deve continuare
+        if (CONTINUOUS_TURNS) {
+            keepTurn = (result == '@'); // Continua se ha colpito una nave
+        } else {
+            keepTurn = false;
+        }
     }
 
     cout << "Fine del turno di " << player->name << "." << endl;
@@ -512,7 +607,6 @@ void  Player::turno(Player *player, Player *enemy) {
 
     cout << "-----------------------------------" << endl;
 }
-
 
 void gameLoop(Player *player1, Player *player2) {
     clearScreen();
