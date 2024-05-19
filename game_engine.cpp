@@ -368,7 +368,6 @@ void Player::strikeBoard(Player *player, Player *enemy) {
     // Gestiamo tutte le board
     enemy->board[x][y] = '@';
     player->boardMem[x][y] = '@';
-    enemy->boardSunk[x][y] = '@';
     // Comunicazione al giocatore
     cout << "BINGO! Ha fatto centro signor capitano " << endl;
   } else if (enemy->board[x][y] == '~') { // CASE 2 PLAYER HITS WATER
@@ -412,78 +411,38 @@ void replace(char board[10][10], const char replacedChar, const char newChar) {
 
 
 
-// FUNZIONE PER CONTROLLARE SE UNA NAVE SAREBBE AFFONDATA
 string Player::isSank(Player *player) const {
-  // LOOKING FOR SOMETHING MISSING
-  for (int i = 0; i < 10; i++) {
-    for (int j = 0; j < 10; j++) {
-      char type = this->boardSunk[i][j];
-      if (type != '~' && type != '#') {
-        string shipName = getString(type);
-        // CHECK IF THE SHIP WE ARE CONTROLLING IS ALREADY SUNKEN
-        if (!player->alreadyMissing(player, shipName)) {
-          int shipLength = shipSize(shipName);
-          bool isSunk = true;
-          int startRow = i, startCol = j;
-          bool foundStart = false;
+    for (int i = 0; i < 7; i++) {
+        string nave = shiplist[i];
+        char type = getChar(nave);
+        bool isSunk = true;
 
-          // Find the starting position of the ship
-          for (int r = 0; r < 10; r++) {
-            for (int c = 0; c < 10; c++) {
-              if (this->boardSunk[r][c] == type) {
-                startRow = r;
-                startCol = c;
-                foundStart = true;
-                break;
-              }
+        for (int row = 0; row < 10; row++) {
+            for (int col = 0; col < 10; col++) {
+                if (player->boardSunk[row][col] == type && player->board[row][col] != '@') {
+                    isSunk = false;
+                    break;
+                }
             }
-            if (foundStart) break;
-          }
-
-          // Check if the ship is sunk
-          for (int k = 0; k < shipLength; k++) {
-            int row = startRow, col = startCol;
-            if (isHorizontal(startRow, startCol, type, shipLength)) {
-              col += k;
-            } else {
-              row += k;
-            }
-            if (this->boardSunk[row][col] != '@') {
-              isSunk = false;
-              break;
-            }
-          }
-
-          // IF SHIP HAS BEEN SUNKEN
-          if (isSunk) {
-            // HANDLE PLAYER BOARDS CHAR REPLACEMENT
-            replace(player->board, type, '#');
-            replace(player->boardSunk, type, '#');
-
-            // UPDATE THE MISSING LIST
-            for (int k = 0; k < 7; k++) {
-              if (this->missingShips[k] == "O") {
-                player->missingShips[k] = shipName;
-                cout << "Abbiamo affondato questa imbarcazione: " << shipName << "!" << endl;
-                return shipName;
-              }
-            }
-          }
+            if (!isSunk) break;
         }
-      }
+
+        if (isSunk) {
+            // Affondamento rilevato, aggiorna entrambe le mappe
+            for (int row = 0; row < 10; row++) {
+                for (int col = 0; col < 10; col++) {
+                    if (player->board[row][col] == type) {
+                        player->board[row][col] = '#';  // Segna la nave come affondata su board
+                        player->boardSunk[row][col] = '#';  // Segna la nave come affondata su boardSunk
+                    }
+                }
+            }
+            return nave; // Ritorna il nome della nave affondata
+        }
     }
-  }
-  return "error";
+    return "error"; // Se nessuna nave è stata affondata, ritorna "error"
 }
 
-bool Player::isHorizontal(int row, int col, char type, int shipLength) const {
-  for (int i = 0; i < shipLength; i++) {
-    if (row + i >= 10 || this->boardSunk[row + i][col] != type) {
-      return false;
-    }
-  }
-  return true;
-}
 
 
 
@@ -500,37 +459,58 @@ bool Player::checkWin(const Player *player) {
   return true;
 }
 
+void confirmNextTurn() {
+    if (CONFIRM_NEXT_TURN) {
+        cout << "Premi INVIO per passare al turno successivo..." << endl;
+        cin.ignore();  // Ignora i caratteri rimanenti nel buffer
+        string dummy;
+        getline(cin, dummy);  // Attendi l'input dell'utente
+        clearScreen();
+    }
+}
+
+
 
 void Player::turno(Player *player, Player *enemy) {
-  string sunkenOne = "";
-  cout << "TURNO DEL GIOCATORE: " << player->name << endl;
+    string sunkenOne = "";
+    cout << "TURNO DEL GIOCATORE: " << player->name << endl;
 
-  // Utilizzare la nuova funzione per stampare entrambe le mappe
-  player->stampaBoardAndMem(player);
+    // Utilizzare la nuova funzione per stampare entrambe le mappe
+    player->stampaBoardAndMem(player);
 
-  player->strikeBoard(player, enemy);
+    player->strikeBoard(player, enemy);
 
-  sunkenOne = player->isSank(enemy);
-  if (sunkenOne != "error") {
-    cout << "Abbiamo affondato questa imbarcazione: " << sunkenOne << "!" << endl;
-  }
+    sunkenOne = player->isSank(enemy);
+    if (sunkenOne != "error") {
+        cout << "Abbiamo affondato questa imbarcazione: " << sunkenOne << "!" << endl;
+    }
 
-  if (player->checkWin(enemy)) {
-    cout << "Congratulazioni, " << player->name << "! Hai vinto la partita!" << endl;
-    return;
-  }
+    if (player->checkWin(enemy)) {
+        cout << "Congratulazioni, " << player->name << "! Hai vinto la partita!" << endl;
+        return;
+    }
 
-  cout << "Fine del turno di " << player->name << "." << endl;
+    cout << "Fine del turno di " << player->name << "." << endl;
 
-  if (CONFIRM_NEXT_TURN) {
-    cout << "Premi INVIO per passare al turno successivo..." << endl;
-    cin.ignore();  // Ignora i caratteri rimanenti nel buffer
-    string dummy;
-    getline(cin, dummy);  // Attendi l'input dell'utente
-  }
+    if (CONFIRM_NEXT_TURN) {
+        cout << "Premi INVIO per passare al turno successivo..." << endl;
+        cin.ignore();  // Ignora i caratteri rimanenti nel buffer
+        string dummy;
+        getline(cin, dummy);  // Attendi l'input dell'utente
 
-  cout << "-----------------------------------" << endl;
+        // Clear screen
+        clearScreen();
+
+        // Player 2, sei pronto?
+        cout << "Player 2, sei pronto?" << endl;
+        cout << "Premi INVIO per confermare..." << endl;
+        getline(cin, dummy);  // Attendi l'input dell'utente
+        clearScreen();
+    }
+
+    cout << "-----------------------------------" << endl;
 }
+
 
 void gameLoop(Player *player1, Player *player2) {
     clearScreen();
@@ -539,6 +519,7 @@ void gameLoop(Player *player1, Player *player2) {
     Player *opponent = player2;
 
     while (!game_over) {
+
         // Turno del giocatore corrente
         current_player->turno(current_player, opponent);
 
@@ -575,6 +556,7 @@ void Player::startGame() {
     }
 
     clearScreen();
+
 
     // Inizio del gioco
     if (answer == 'm') {
