@@ -26,7 +26,7 @@ int main() {
                 Player player;
                 player.AistartGame();
                 break;
-                // TODO CAMBIARE COSTANTI PER GIOCO AI
+                
             }
             case 4:
                 displaySettings();
