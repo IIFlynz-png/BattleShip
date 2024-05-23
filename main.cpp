@@ -1,8 +1,10 @@
 #include <iostream>
-#include "game_engine.h" // Assicurati di includere il file header corretto
-#include <chrono>
+#include "game_engine.h"
+
+
 
 int main() {
+
     int choice;
 
     do {
@@ -18,18 +20,25 @@ int main() {
                 Player player;
                 player.startGame();
                 break;
+
             }
-            case 3:
+            case 3: {
+                Player player;
+                player.AistartGame();
+                break;
+                // TODO CAMBIARE COSTANTI PER GIOCO AI
+            }
+            case 4:
                 displaySettings();
             break;
-            case 4:
+            case 5:
                 cout << "Arrivederci!" << endl;
             break;
             default:
                 cout << "Opzione non valida. Riprova." << endl;
             break;
         }
-    } while (choice != 4);
+    } while (choice != 5);
 
     return 0;
 }

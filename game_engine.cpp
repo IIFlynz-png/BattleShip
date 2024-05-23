@@ -5,19 +5,26 @@
 #include <cstdlib>
 #include <chrono>
 #include <random>
-
-
-bool CONTINUOUS_TURNS = true;   // Initial value
-bool AUTO_PLACEMENT = false;    // Initial value
-bool CONFIRM_NEXT_TURN = true;  // Initial value
-
-
+#include <utility>
 using namespace std;
+
+
+////// IMPOSTAZIONI //////
+
+bool CONFIRM_NEXT_TURN = false;   // Initial value
+bool AUTO_PLACEMENT = false;    // Initial value
+bool CONTINUOUS_TURNS = false;   // Initial value
+bool CONFIRM_AI_NEXT_TURN = true; // Initial value
 
 string shiplist[7] = {
     "portaerei","corazzata",   "incrociatore", "cacciatorpediniere",
     "cacciatorpedinierex", "sottomarino", "sottomarinox"};
 
+
+
+////// INTERFACCIA //////
+
+// Funzione per mostrare il menù
 void displayMenu() {
     cout << "______         _    _                  _  _          _   _                       _       " << endl;
     cout << "| ___ \\       | |  | |                | |(_)        | \\ | |                     | |      " << endl;
@@ -30,23 +37,23 @@ void displayMenu() {
     cout << endl;
     cout << "------------------------------------" << endl;
     cout << "1. Regole" << endl;
-    cout << "2. Gioca" << endl;
-    cout << "3. Impostazioni" << endl;
-    cout << "4. Esci" << endl;
+    cout << "2. Gioca (Player vs Player)" << endl;
+    cout << "3. Gioca (Player vs AI)" << endl;
+    cout << "4. Impostazioni" << endl;
+    cout << "5. Esci" << endl;
     cout << "------------------------------------" << endl;
     cout << "Seleziona un'opzione: ";
 }
 
+// Funzione per mostrare le regole di gioco
 void displayRules() {
     cout << "Regole del gioco:" << endl;
     cout << "- Ogni giocatore ha una flotta di 7 navi:" << endl;
-    cout << "  1 Portaerei (5 celle) - 'P'" << endl;
-    cout << "  1 Corazzata (4 celle) - 'C'" << endl;
-    cout << "  1 Incrociatore (3 celle) - 'I'" << endl;
-    cout << "  1 Cacciatorpediniere (3 celle) - 'D'" << endl;
-    cout << "  1 Cacciatorpedinierex (3 celle) - 'N'" << endl;
-    cout << "  1 Sottomarino (2 celle) - 'S'" << endl;
-    cout << "  1 Sottomarinox (2 celle) - 'R'" << endl;
+    cout << "  1 Portaerei (5 celle)" << endl;
+    cout << "  1 Corazzata (4 celle)" << endl;
+    cout << "  1 Incrociatore (3 celle)" << endl;
+    cout << "  2 Cacciatorpedinieri (3 celle)" << endl;
+    cout << "  2 Sottomarini (2 celle)" << endl;
     cout << "- Le navi possono essere posizionate orizzontalmente o verticalmente sulla griglia." << endl;
     cout << "- I giocatori si alternano sparando un colpo alla volta." << endl;
     cout << "- Se un colpo colpisce una nave, viene segnato con '@'." << endl;
@@ -59,11 +66,13 @@ void displayRules() {
     getline(cin, dummy);
 }
 
+// Funzione per le impostazioni
 void displaySettings() {
     cout << "Impostazioni:" << endl;
     cout << "1. Conferma per il turno successivo: " << (CONFIRM_NEXT_TURN ? "Attivo" : "Disattivo") << endl;
-    cout << "2. Posizionamento automatico delle navi: " << (AUTO_PLACEMENT ? "Attivo" : "Disattivo") << endl;
-    cout << "3. Turni continui: " << (CONTINUOUS_TURNS ? "Attivo" : "Disattivo") << endl;
+    cout << "2. Conferma per il turno dell'IA: " << (CONFIRM_AI_NEXT_TURN ? "Attivo" : "Disattivo") << endl;
+    cout << "3. Posizionamento automatico delle navi: " << (AUTO_PLACEMENT ? "Attivo" : "Disattivo") << endl;
+    cout << "4. Turni continui: " << (CONTINUOUS_TURNS ? "Attivo" : "Disattivo") << endl;
     cout << "Seleziona un'opzione per modificarla (0 per uscire): ";
 
     int choice;
@@ -74,9 +83,12 @@ void displaySettings() {
             CONFIRM_NEXT_TURN = !CONFIRM_NEXT_TURN;
         break;
         case 2:
-            AUTO_PLACEMENT = !AUTO_PLACEMENT;
+            CONFIRM_AI_NEXT_TURN = !CONFIRM_AI_NEXT_TURN;
         break;
         case 3:
+            AUTO_PLACEMENT = !AUTO_PLACEMENT;
+        break;
+        case 4:
             CONTINUOUS_TURNS = !CONTINUOUS_TURNS;
         break;
         case 0:
@@ -89,18 +101,42 @@ void displaySettings() {
     displaySettings(); // Mostra nuovamente le impostazioni
 }
 
+// Funzione che ritorna la stringa in minuscolo
 string lowerString(const string &str) {
   string result = str;
   transform(result.begin(), result.end(), result.begin(), ::tolower);
   return result;
 }
 
+// Funzione per fare il clear dello schermo
 void clearScreen() {
   for (int i = 0 ; i < 100 ; i++)
     cout << endl ;
 }
 
-// SETTERS & GETTERS
+void confirmNextTurn() {
+    if (CONFIRM_NEXT_TURN) {
+        cout << "Premi INVIO per passare al turno successivo..." << endl;
+        cin.ignore();  // Ignora i caratteri rimanenti nel buffer
+        string dummy;
+        getline(cin, dummy);  // Attendi l'input dell'utente
+        clearScreen();
+    }
+}
+
+void confirmAINextTurn() {
+    if (CONFIRM_AI_NEXT_TURN) {
+        cout << "Premi INVIO per passare al turno dell'IA..." << endl;
+        cin.ignore();  // Ignora i caratteri rimanenti nel buffer
+        string dummy;
+        getline(cin, dummy);  // Attendi l'input dell'utente
+    }
+}
+
+
+
+
+////// GETTERS //////
 int shipSize(const string &tipo) {
 
   if (tipo == "portaerei") {
@@ -152,7 +188,6 @@ string getString(const char name) {
   return "error";
 }
 
-
 string getOrientation() {
   string orientation;
   do {
@@ -164,97 +199,12 @@ string getOrientation() {
   return orientation;
 }
 
-void Player::stampaBoardAndMem(Player *player) {
-  // Stampa la mappa del giocatore
-  cout << "La tua mappa:" << endl;
-  cout << "   ";
-  for (int c = 0; c < 10; c++) {
-    cout << " " << c;
-  }
-  cout << endl;
-  cout << "  ";
-  for (int i = 0; i < 10; i++) {
-    cout << "===";
-  }
-  cout << "===" << endl;
-
-  for (int i = 0; i < 10; i++) {
-    cout << i << " ";
-    cout << "|";
-    for (int j = 0; j < 10; j++) {
-      cout << " " << player->board[i][j];
-    }
-    cout << " |" << endl;
-  }
-
-  cout << "  ";
-  for (int i = 0; i < 10; i++) {
-    cout << "===";
-  }
-  cout << "===" << endl;
-
-  // Stampa la mappa della memoria del giocatore
-  cout << "Cosa sappiamo sull'avversario:" << endl;
-  cout << "   ";
-  for (int c = 0; c < 10; c++) {
-    cout << " " << c;
-  }
-  cout << endl;
-  cout << "  ";
-  for (int i = 0; i < 10; i++) {
-    cout << "===";
-  }
-  cout << "===" << endl;
-
-  for (int i = 0; i < 10; i++) {
-    cout << i << " ";
-    cout << "|";
-    for (int j = 0; j < 10; j++) {
-      cout << " " << player->boardMem[i][j];
-    }
-    cout << " |" << endl;
-  }
-
-  cout << "  ";
-  for (int i = 0; i < 10; i++) {
-    cout << "===";
-  }
-  cout << "===" << endl;
-}
 
 
-// player INTERFACE
-void Player::stampa(char M[10][10]) { // Aiuto del signor GPT in questa parte per lo stile
-  clearScreen();
-  cout << "   "; // Stampa uno spazio per allineare i numeri delle colonne
-  for (int c = 0; c < 10; c++) {
-    cout << " " << c; // Stampa uno spazio prima del numero della colonna
-  }
-  cout << endl;
-  cout << "  "; // Stampa due spazi per allineare la prima colonna
-  for (int i = 0; i < 10; i++) {
-    cout << "==="; // Stampa i separatori delle colonne
-  }
-  cout << "===" << endl; // Stampa un separatore aggiuntivo alla fine della riga
 
-  for (int i = 0; i < 10; i++) {
-    cout << i << " "; // Stampa il numero della riga con uno spazio dopo
-    cout << "|";      // Stampa il separatore di riga
-    for (int j = 0; j < 10; j++) {
-      cout << " "
-           << M[i][j]; // Stampa uno spazio prima del contenuto della casella
-    }
-    cout << " |" << endl; // Stampa il separatore di riga e va a capo
-  }
+////// METODI PRIVATI //////
 
-  cout << "  "; // Stampa due spazi per allineare la prima colonna
-  for (int i = 0; i < 10; i++) {
-    cout << "==="; // Stampa i separatori delle colonne
-  }
-  cout << "===" << endl; // Stampa un separatore aggiuntivo alla fine della riga
-}
-
-// PRIVATE METHODS
+// Implementazione deil metodo per inizializzare una board
 void Player::initBoard(char board[10][10]) {
   for (int i = 0; i < 10; i++) {
     for (int j = 0; j < 10; j++) {
@@ -263,6 +213,7 @@ void Player::initBoard(char board[10][10]) {
   }
 }
 
+// implementazione del metodo per inizializzare un giocatore
 void Player::initPlayer(Player &player) {
   for (int i = 0; i < 7; i++) player.missingShips[i] = "O";
   player.portaerei = 1;
@@ -274,7 +225,9 @@ void Player::initPlayer(Player &player) {
   player.sottomarinox = 1;
 }
 
-// CONSTRUCTORS
+
+////// COSTRUTTORI //////
+
 Player::Player() {
   initBoard(board);
   initBoard(boardMem);
@@ -288,14 +241,220 @@ Player::Player(const int playerNumber, const string &playerName) {
   initBoard(board);
   initBoard(boardMem);
   initBoard(boardSunk);
-  initPlayer(*this); // This is used to pass the current object
+  initPlayer(*this);
 }
 
-// PUBLIC METHODS
 
+
+////// FUNZIONI PER IL GAME //////
+
+// Implementazione del loop fi gioco principale
+void gameLoop(Player *player1, Player *player2) {
+    clearScreen();
+    bool game_over = false;
+    Player *current_player = player1;
+    Player *opponent = player2;
+
+    while (!game_over) {
+
+        // Turno del giocatore corrente
+        current_player->turno(current_player, opponent);
+
+        // Scambio dei ruoli dei giocatori per il turno successivo
+        swap(current_player, opponent);
+
+        // Verifica se la partita e' finita
+        if (current_player->checkWin(opponent)) {
+            cout << "Partita finita! " << current_player->name << " ha vinto!" << endl;
+            game_over = true;
+        }
+    }
+}
+
+// Implementazione del metodo startGame per il gioco PVP
+void Player::startGame() {
+    char answer;
+
+    // Creazione dei giocatori
+    Player player1(1, "Player 1");
+    Player player2(2, "Player 2");
+
+
+    // Chiedi all'utente  1 se vuole posizionare le navi manualmente o automaticamente
+    if (!AUTO_PLACEMENT) {
+        cout << "Giocatore 1, vuoi posizionare le navi manualmente (M) o automaticamente (A)? ";
+        cin >> answer;
+        answer = tolower(answer);
+    } else {
+        answer = 'a'; // Imposta il posizionamento automatico se AUTO_PLACEMENT e' true
+    }
+
+    clearScreen();
+
+
+    if (answer == 'm') {
+        cout << "Inizia il posizionamento delle navi per il Player 1" << endl;
+        for (int i = 0; i < 7; ++i) {
+            string shipType = player1.scegliNave(&player1);
+            player1.HandlePlacement(&player1, shipType);
+            player1.stampa(player1.board);
+        }
+        clearScreen();  // Clear screen to prevent Player 2 from seeing Player 1's board
+
+    } else {
+        // Posizionamento automatico delle navi
+        player1.autoPlacement(&player1);
+    }
+
+
+
+    // Chiedi all'utente  2 se vuole posizionare le navi manualmente o automaticamente
+    if (!AUTO_PLACEMENT) {
+        cout << "Giocatore 2, vuoi posizionare le navi manualmente (M) o automaticamente (A)? ";
+        cin >> answer;
+        answer = tolower(answer);
+    } else {
+        answer = 'a'; // Imposta il posizionamento automatico se AUTO_PLACEMENT e' true
+    }
+
+    clearScreen();
+
+    if (answer == 'm') {
+        cout << "Inizia il posizionamento delle navi per il Player 2" << endl;
+        for (int i = 0; i < 7; ++i) {
+            string shipType = player2.scegliNave(&player2);
+            player2.HandlePlacement(&player2, shipType);
+            player2.stampa(player2.board);
+        }
+    } else {
+        player2.autoPlacement(&player2);
+    }
+
+
+    // Avvio del loop di gioco
+    gameLoop(&player1, &player2);
+}
+
+// Implementazione del turno di gioco per il gioco PVP
+void Player::turno(Player *player, Player *enemy) {
+    string sunkenOne = "";
+    cout << "TURNO DEL GIOCATORE: " << player->name << endl;
+
+    // Utilizzare la nuova funzione per stampare entrambe le mappe
+    player->stampaBoardAndMem(player);
+
+    bool keepTurn = true; // Flag per continuare il turno
+
+    while (keepTurn) {
+        char result = player->strikeBoard(player, enemy);
+        sunkenOne = player->isSank(enemy,player);
+        if (sunkenOne != "error") {
+            char temp = getChar(sunkenOne);
+            sunkenOne = getString(temp);
+            cout << "Abbiamo affondato questa imbarcazione: " << sunkenOne << "!" << endl;
+        }
+
+        // Verifica la vittoria prima di passare al turno successivo
+        if (player->checkWin(enemy)) {
+            cout << "Partita finita! " << player->name << " ha vinto!" << endl;
+            return;
+        }
+
+        // Determina se il turno deve continuare
+        if (CONTINUOUS_TURNS) {
+            keepTurn = (result == '@'); // Continua se ha colpito una nave
+        } else {
+            keepTurn = false;
+        }
+    }
+
+    cout << "Fine del turno di " << player->name << "." << endl;
+
+    if (CONFIRM_NEXT_TURN) {
+        cout << "Premi INVIO per passare al turno successivo..." << endl;
+        cin.ignore();  // Ignora i caratteri rimanenti nel buffer
+        string dummy;
+        getline(cin, dummy);  // Attendi l'input dell'utente
+
+        // Clear screen
+        clearScreen();
+
+        // Player 2, sei pronto?
+        cout << "Player 2, sei pronto?" << endl;
+        cout << "Premi INVIO per confermare..." << endl;
+        getline(cin, dummy);  // Attendi l'input dell'utente
+        clearScreen();
+    }
+
+    cout << "-----------------------------------" << endl;
+}
+
+// Implementazione del metodo per verificare la vittoria di uno dei 2 Player
+bool Player::checkWin(const Player *player) {
+    // Controlla se nella board ci sono caratteri diversi da  '~', 'X', or '@'
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            char cell = player->board[i][j];
+            if (cell != '~' && cell != 'X' && cell != '@') {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// Implementazione del metodo per verificare se una nave e' affondata
+string Player::isSank(Player *player, Player *enemy) const {
+
+    // Per ogni singola nave
+    for (int i = 0; i < 7; i++) {
+        string nave = shiplist[i];
+        char type = getChar(nave);
+        bool isSunk = true;
+
+
+        for (int row = 0; row < 10; row++) {
+            for (int col = 0; col < 10; col++) {
+                if (player->boardSunk[row][col] == type && player->board[row][col] != '@') {
+                    isSunk = false;
+                    break;
+                }
+            }
+            if (!isSunk) break;
+        }
+
+        if (isSunk) {
+            // Affondamento rilevato, aggiorna entrambe le mappe
+            for (int row = 0; row < 10; row++) {
+                for (int col = 0; col < 10; col++) {
+                    if (player->boardSunk[row][col] == type) {
+                        player->board[row][col] = '#';  // Segna la nave come affondata su board
+                        enemy->boardMem[row][col] = '#';
+                    }
+                }
+            }
+            return nave; // Ritorna il nome della nave affondata
+        }
+    }
+
+    return "error"; // Se nessuna nave e' stata affondata, ritorna "error"
+}
+
+// Funzione per sostituire un char con un altro char nella matrice di gioco
+void replace(char board[10][10], const char replacedChar, const char newChar) {
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            if (board[i][j] == replacedChar) {
+                board[i][j] = newChar;
+            }
+        }
+    }
+}
+
+// Implementazione del metodo per la scelta della nave da posizionare
 string Player::scegliNave(Player *player) {
   string nome;
-  bool naveValida = false; // Flag per controllare se la nave è valida
+  bool naveValida = false; // Flag per controllare se la nave e' valida
 
   cout << "Quale nave posizioniamo, capitano?" << endl;
   cout << "Portaerei"
@@ -335,7 +494,7 @@ string Player::scegliNave(Player *player) {
     }
   } while (!naveValida); // Continua a chiedere finché non viene inserita una nave valida
 
-  // Aggiorna il numero di navi rimanenti solo se la nave è valida
+  // Aggiorna il numero di navi rimanenti solo se la nave e' valida
   if (nome == "portaerei") {
     this->portaerei--;
   } else if (nome == "corazzata") {
@@ -359,6 +518,7 @@ string Player::scegliNave(Player *player) {
   return nome;
 }
 
+// Implementazione del metodo per gestire il piazzamento manuale delle na sulla board
 void Player::HandlePlacement(Player *player, const string &shiptype) {
     // Ottengo delle coordinate valide
     string config = getOrientation();
@@ -386,7 +546,7 @@ void Player::HandlePlacement(Player *player, const string &shiptype) {
                     if (!isOverlapping) {
                         validCoords = true;
                     } else {
-                        cout << "Le coordinate inserite sono già occupate da un'altra nave. Reinserisci le coordinate." << endl;
+                        cout << "Le coordinate inserite sono gia occupate da un'altra nave. Reinserisci le coordinate." << endl;
                     }
                 } else {
                     cout << "La nave eccede i limiti della griglia in verticale. Reinserisci le coordinate." << endl;
@@ -402,7 +562,7 @@ void Player::HandlePlacement(Player *player, const string &shiptype) {
                     if (!isOverlapping) {
                         validCoords = true;
                     } else {
-                        cout << "Le coordinate inserite sono già occupate da un'altra nave. Reinserisci le coordinate." << endl;
+                        cout << "Le coordinate inserite sono gia' occupate da un'altra nave. Reinserisci le coordinate." << endl;
                     }
                 } else {
                     cout << "La nave eccede i limiti della griglia in orizzontale. Reinserisci le coordinate." << endl;
@@ -427,283 +587,73 @@ void Player::HandlePlacement(Player *player, const string &shiptype) {
     }
 }
 
-
+// Implementazione del metodo per gestire gli spari sulla board
 char Player::strikeBoard(Player *player, Player *enemy) {
-  // Scelta le coordinate
-  int x, y;
-  do {
-    cout << "Dove spariamo signor capitano (Inserisci la riga e poi la colonna) ? "
-         << endl;
-    cin >> x >> y;
-    if (x > 9 or x < 0 or y > 9 or y < 0)
-      cout << "Capitano si sarà mica ubriacato! Non possiamo sparare là !"
-           << endl;
-  } while (x > 9 or x < 0 or y > 9 or y < 0);
+    int x, y;
+    bool validCoords = false;
 
-  // STRIKES HANDLING
-  if (enemy->board[x][y] == 'O') { // CASE 1 PLAYER HITS THE TARGET
-    // Gestiamo tutte le board
-    enemy->board[x][y] = '@';
-    player->boardMem[x][y] = '@';
-      return '@';
-    // Comunicazione al giocatore
-    cout << "BINGO! Ha fatto centro signor capitano " << endl;
-  } else if (enemy->board[x][y] == '~') { // CASE 2 PLAYER HITS WATER
-    enemy->board[x][y] = 'X';
-    player->boardMem[x][y] = 'X';
-      return 'X';
-    // Comunicazione col giocatore
-    cout << "DANNAZIONE! Abbiamo colpito il mare signor capitano " << endl;
-  } else if (enemy->board[x][y] =='@') { // CASE 3 PLAYER HITS A SUNKEN PORTION OF A SHIP
-    cout << "SIGNORE CHE COSA FA ?!!?! Abbiamo gia affondato quella porzione di nave, spari altrove !"
-         << endl;
-    return 'X';
-  } else { // CASE 4 PLAYER HITS AN ALREADY SHOT PORTION OF WATER
-    cout << "SIGNORE CHE COSA FA ?!!?! Abbiamo gia visto che non c'e un bel niente in quel punto, spari altrove !"
-         << endl;
-  } return 'X';
+    while (!validCoords) {
+        cout << "Capitano, inserisci le coordinate x (0-9) per lanciare il siluro: ";
+        cin >> x;
+        cout << "E ora le coordinate y (0-9), capitano: ";
+        cin >> y;
 
-}
-
-
-// INIZIALIZZA LA LISTA-SPARITI USA IL COSTRUTTORE
-
-// FUNZIONE PER SAPERE SE UNA NAVE E' GIA' STATA AFFONDATA
-bool Player::alreadyMissing(const Player *player, const string &name) {
-  for (int i = 0; i < 7; i++) {
-    if (player->missingShips[i] == name) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// FUNZIONE PER SOSTITUIRE UN CHAR CON UN ALTRO NELLA MATRICE
-void replace(char board[10][10], const char replacedChar, const char newChar) {
-  for (int i = 0; i < 10; i++) {
-    for (int j = 0; j < 10; j++) {
-      if (board[i][j] == replacedChar) {
-        board[i][j] = newChar;
-      }
-    }
-  }
-}
-
-
-
-
-
-string Player::isSank(Player *player) const {
-    for (int i = 0; i < 7; i++) {
-        string nave = shiplist[i];
-        char type = getChar(nave);
-        bool isSunk = true;
-
-        for (int row = 0; row < 10; row++) {
-            for (int col = 0; col < 10; col++) {
-                if (player->boardSunk[row][col] == type && player->board[row][col] != '@') {
-                    isSunk = false;
-                    break;
-                }
-            }
-            if (!isSunk) break;
-        }
-
-        if (isSunk) {
-            // Affondamento rilevato, aggiorna entrambe le mappe
-            for (int row = 0; row < 10; row++) {
-                for (int col = 0; col < 10; col++) {
-                    if (player->board[row][col] == type) {
-                        player->board[row][col] = '#';  // Segna la nave come affondata su board
-                        player->boardSunk[row][col] = '#';  // Segna la nave come affondata su boardSunk
-                    }
-                }
-            }
-            return nave; // Ritorna il nome della nave affondata
-        }
-    }
-    return "error"; // Se nessuna nave è stata affondata, ritorna "error"
-}
-
-
-
-
-// UPDATE HEADER FILE
-
-// FUNZIONE PER VERIFICARE LA VINCITA
-bool Player::checkWin(const Player *player) {
-    // Check if there are any characters other than '~', 'X', or '@' in the player's board
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
-            char cell = player->board[i][j];
-            if (cell != '~' && cell != 'X' && cell != '@') {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-void confirmNextTurn() {
-    if (CONFIRM_NEXT_TURN) {
-        cout << "Premi INVIO per passare al turno successivo..." << endl;
-        cin.ignore();  // Ignora i caratteri rimanenti nel buffer
-        string dummy;
-        getline(cin, dummy);  // Attendi l'input dell'utente
-        clearScreen();
-    }
-}
-
-
-
-void Player::turno(Player *player, Player *enemy) {
-    string sunkenOne = "";
-    cout << "TURNO DEL GIOCATORE: " << player->name << endl;
-
-    // Utilizzare la nuova funzione per stampare entrambe le mappe
-    player->stampaBoardAndMem(player);
-
-    bool keepTurn = true; // Flag per continuare il turno
-
-    while (keepTurn) {
-        char result = player->strikeBoard(player, enemy);
-
-        sunkenOne = player->isSank(enemy);
-        if (sunkenOne != "error") {
-            cout << "Abbiamo affondato questa imbarcazione: " << sunkenOne << "!" << endl;
-        }
-
-        // Verifica la vittoria prima di passare al turno successivo
-        if (player->checkWin(enemy)) {
-            cout << "Partita finita! " << player->name << " ha vinto!" << endl;
-            return;
-        }
-
-        // Determina se il turno deve continuare
-        if (CONTINUOUS_TURNS) {
-            keepTurn = (result == '@'); // Continua se ha colpito una nave
+        if (x >= 0 && x < 10 && y >= 0 && y < 10) {
+            validCoords = true;
         } else {
-            keepTurn = false;
+            cout << "Ehi capitano, quelle coordinate non sono valide! Riprova." << endl;
         }
     }
 
-    cout << "Fine del turno di " << player->name << "." << endl;
-
-    if (CONFIRM_NEXT_TURN) {
-        cout << "Premi INVIO per passare al turno successivo..." << endl;
-        cin.ignore();  // Ignora i caratteri rimanenti nel buffer
-        string dummy;
-        getline(cin, dummy);  // Attendi l'input dell'utente
-
-        // Clear screen
-        clearScreen();
-
-        // Player 2, sei pronto?
-        cout << "Player 2, sei pronto?" << endl;
-        cout << "Premi INVIO per confermare..." << endl;
-        getline(cin, dummy);  // Attendi l'input dell'utente
-        clearScreen();
-    }
-
-    cout << "-----------------------------------" << endl;
-}
-
-void gameLoop(Player *player1, Player *player2) {
-    clearScreen();
-    bool game_over = false;
-    Player *current_player = player1;
-    Player *opponent = player2;
-
-    while (!game_over) {
-
-        // Turno del giocatore corrente
-        current_player->turno(current_player, opponent);
-
-        // Scambio dei ruoli dei giocatori per il turno successivo
-        swap(current_player, opponent);
-
-        // Verifica se la partita è finita
-        if (current_player->checkWin(opponent)) {
-            cout << "Partita finita! " << current_player->name << " ha vinto!" << endl;
-            game_over = true;
-        }
+    if (enemy->board[x][y] == 'O') { // Caso 1: Il giocatore colpisce una nave
+        enemy->board[x][y] = '@';
+        player->boardMem[x][y] = '@';
+        cout << "Bingo capitano! Hai colpito una nave nemica!" << endl;
+        return '@';
+    } else if (enemy->board[x][y] == '~') { // Caso 2: Il giocatore colpisce l'acqua
+        enemy->board[x][y] = 'X';
+        player->boardMem[x][y] = 'X';
+        cout << "Ahah capitano, hai colpito solo acqua! Fortuna che non siamo sull'Oceano Atlantico!" << endl;
+        return 'X';
+    } else if (enemy->board[x][y] == '@') { // Caso 3: Il giocatore colpisce una porzione affondata di una nave
+        cout << "Capitano, hai colpito una nave che era gia' affondata. Forse dovresti cambiare gli occhiali!" << endl;
+        return 'X';
+    } else { // Caso 4: Il giocatore colpisce una porzione di acqua gia' colpita
+        cout << "Capitano, hai colpito lo stesso punto di prima! Forse e' ora di una pausa?" << endl;
+        return 'X';
     }
 }
 
-void Player::startGame() {
-    char answer;
-    // Creazione dei giocatori
-    Player player1(1, "Player 1");
-    Player player2(2, "Player 2");
-
-    // Presentazione delle istruzioni del gioco
-    cout << "Benvenuti al gioco della battaglia navale!" << endl;
-    cout << "I giocatori si alterneranno per posizionare le proprie navi sulla griglia." << endl;
-    cout << "Una volta posizionate le navi, inizia il gioco e i giocatori si alterneranno nei turni per cercare di colpire le navi nemiche." << endl;
-    cout << "Il primo giocatore a affondare tutte le navi dell'avversario vince il gioco." << endl;
-
-    // Chiedi all'utente se vuole posizionare le navi manualmente o automaticamente
-    if (!AUTO_PLACEMENT) {
-        cout << "Vuoi posizionare le navi manualmente (M) o automaticamente (A)? ";
-        cin >> answer;
-        answer = tolower(answer);
-    } else {
-        answer = 'a'; // Imposta il posizionamento automatico se AUTO_PLACEMENT è true
-    }
-
-    clearScreen();
 
 
-    // Inizio del gioco
-    if (answer == 'm') {
-        cout << "Inizia il posizionamento delle navi per il Player 1" << endl;
-        for (int i = 0; i < 7; ++i) {
-            string shipType = player1.scegliNave(&player1);
-            player1.HandlePlacement(&player1, shipType);
-            player1.stampa(player1.board);
-        }
-        clearScreen();  // Clear screen to prevent Player 2 from seeing Player 1's board
 
-        cout << "Inizia il posizionamento delle navi per il Player 2" << endl;
-        for (int i = 0; i < 7; ++i) {
-            string shipType = player2.scegliNave(&player2);
-            player2.HandlePlacement(&player2, shipType);
-            player2.stampa(player2.board);
-        }
-    } else {
-        // Posizionamento automatico delle navi
-        player1.autoPlacement(&player1);
-        player2.autoPlacement(&player2);
-    }
+////// FUNZIONI PER IL BOT //////
 
-    // Avvio del loop di gioco
-    gameLoop(&player1, &player2);
-}
-
-// FUNZIONE PER GENERARE COORDINATE CASUALI (0-9)
-
+// Implementazione della funzione per la generazione di una coordinata casuale
 int getRandCoords() {
   // Seed basato sul tempo corrente ad alta risoluzione
   unsigned seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  std::mt19937 generator(seed); // Mersenne Twister per una migliore casualità
+  std::mt19937 generator(seed); // Mersenne Twister per una migliore casualita'
   std::uniform_int_distribution<int> distribution(0, 9);
   return distribution(generator);
 }
 
-// FUNZIONE PER GENERARE CONFIGURAZIONE CASUALE ("verticale" o "orizzontale")
+// Implementazione della funziona per la generazione di una configurazione casuale
 string getRandConfig() {
   // Seed basato sul tempo corrente ad alta risoluzione
   unsigned seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  std::mt19937 generator(seed); // Mersenne Twister per una migliore casualità
+  std::mt19937 generator(seed); // Mersenne Twister per una migliore casualita'
   std::uniform_int_distribution<int> distribution(1, 2);
   int num = distribution(generator);
   return (num == 1) ? "verticale" : "orizzontale";
 }
 
+// Implementazione del metodo per il piazzamento automatico delle navi in tutte le board
 void Player::autoPlacement(Player *player) {
-  // PER TUTTE LE NAVI
+    // Posizionamento automatico delle navi
   int x,y ;
 
+    //  Posiziona ogni nave
   for (int i = 0; i < 7; ++i) {
     // Scelta della nave da posizionare
     string shiptype = shiplist[i];
@@ -770,10 +720,306 @@ void Player::autoPlacement(Player *player) {
             this->boardSunk[x + i][y] = type;
         }
     }
-
-
   }
 }
+
+// implementazione dell'inizializzazione dei campi validCoords
+void Player::initCoords (Player *player) {
+    for (int i = 0 ; i < 10; i++) {
+        for (int j = 0 ; j < 10; j++) {
+            player->validCoords[i][j] = 0 ;
+        }
+    }
+}
+
+// Implemenazione dell'inizializzazione della simulazione di montecarlo
+void Player::initSimulation(Player *player) {
+    for (int i = 0 ; i < 10; i++) {
+        for (int j = 0 ; j < 10; j++) {
+            player->simBoard[i][j] = '~';
+        }
+    }
+}
+
+// Implemenazione della simulazione di montecarlo
+void Player::montecarloSim(Player *player) {
+    initSimulation(player);
+    initCoords(player);
+    // Loop principale della simulazione
+    for (int i = 0 ; i < 1000 ; i++) {
+        //Piazza le navi in modo pseudocasuale
+        initSimulation(player);
+        player->AIautoPlacement(player);
+        // Calcolo delle coordinate migliori
+        for (int j = 0 ; j < 10; j++) {
+            for (int k = 0 ; k < 10 ; k++) {
+                if (player->simBoard[j][k] == 'O') {
+                    player->validCoords[j][k] += 1;
+                }
+            }
+        }
+    }
+}
+
+// Implementazione del metodo di selezione della migliore mossa
+void Player::bestMove(Player *player, int &x, int &y) {
+    int maxVal = player->validCoords[0][0];
+    x = 0;
+    y = 0;
+    // Iterate over the matrix to find the maximum value
+    for (int i = 0; i < 10; ++i) {
+        for (int j = 0; j < 10; ++j) {
+            if (player->validCoords[i][j] > maxVal) {
+                maxVal = player->validCoords[i][j];
+                x = i;
+                y = j;
+            }
+        }
+    }
+    // Set the found position to -1
+    player->validCoords[x][y] = -1;
+}
+
+// Implementazione del metodo di piazzamento pseudocasuale per le navi per la simulazione di montecarlo
+void Player::AIautoPlacement(Player *player) {
+  // PER TUTTE LE NAVI
+  int x,y ;
+
+  for (int i = 0; i < 7; ++i) {
+    // Scelta della nave da posizionare
+    string shiptype = shiplist[i];
+    // Ottengo orientamento della nave
+    string config = getRandConfig();
+
+    char type = getChar(shiptype);
+    bool validCoords = false;
+    int lenght = shipSize(shiptype);
+
+    while (!validCoords) {
+        x = getRandCoords();
+        y = getRandCoords();
+
+        if (x >= 0 && x < 10 && y >= 0 && y < 10) {
+            bool isOverlapping = false;
+            if (config == "verticale") {
+                if (x + lenght < 10) { // Controllo corretto per il limite verticale
+                    for (int i = 0; i < lenght; i++) {
+                        if (this->simBoard[x + i][y] != '~') {
+                            isOverlapping = true;
+                            break;
+                        }
+                    }
+                    if (!isOverlapping) {
+                        validCoords = true;
+                    } else {
+
+                    }
+                } else {
+
+                }
+            } else if (config == "orizzontale") {
+                if (y + lenght < 10) { // Controllo corretto per il limite orizzontale
+                    for (int i = 0; i < lenght; i++) {
+                        if (this->simBoard[x][y + i] != '~') {
+                            isOverlapping = true;
+                            break;
+                        }
+                    }
+                    if (!isOverlapping) {
+                        validCoords = true;
+                    } else {
+
+                    }
+                } else {
+
+                }
+            }
+        } else {
+
+        }
+    }
+
+    // Piazzare la nave sulla griglia
+    if (config == "orizzontale") {
+        for (int i = 0; i < lenght; i++) {
+            this->simBoard[x][y + i] = 'O'; // Posizionamento orizzontale corretto
+        }
+    } else if (config == "verticale") {
+        for (int i = 0; i < lenght; i++) {
+            this->simBoard[x + i][y] = 'O'; // Posizionamento verticale corretto
+        }
+    }
+  }
+}
+
+// Implementazione del metodo StartGame per l'AI
+void Player::AistartGame() {
+    char answer;
+
+    // Creazione dei giocatori
+    Player player1(1, "Giocatore");
+    Player player2(2, "AI");
+    montecarloSim(&player2);
+
+    // Chiedi all'utente se vuole posizionare le navi manualmente o automaticamente
+    if (!AUTO_PLACEMENT) {
+        cout << "Giocatore 1, vuoi posizionare le navi manualmente (M) o automaticamente (A)? ";
+        cin >> answer;
+        answer = tolower(answer);
+    } else {
+        answer = 'a'; // Imposta il posizionamento automatico se AUTO_PLACEMENT e' true
+    }
+
+    clearScreen();
+
+    // Inizio del gioco
+    if (answer == 'm') {
+        cout << "Inizia il posizionamento delle navi per il Giocatore" << endl;
+        for (int i = 0; i < 7; ++i) {
+            string shipType = player1.scegliNave(&player1);
+            player1.HandlePlacement(&player1, shipType);
+            player1.stampa(player1.board);
+        }
+        clearScreen(); // Clear screen to prevent AI from seeing Player 1's board
+        player2.autoPlacement(&player2);
+
+    } else {
+        // Posizionamento automatico delle navi
+        player1.autoPlacement(&player1);
+        player2.autoPlacement(&player2);
+    }
+
+    // Avvio del loop di gioco
+    AigameLoop(&player1, &player2);
+}
+
+// Implementazione del loop di gioco per l'AI
+void AigameLoop(Player *player1, Player *player2) {
+
+    clearScreen();
+    bool game_over = false;
+    Player *human_player = player1;
+    Player *ai_player = player2;
+
+    while (!game_over) {
+        // Turno del giocatore umano
+        human_player->turno(human_player, ai_player);
+
+        // Verifica se la partita e' finita dopo il turno del giocatore umano
+        if (human_player->checkWin(ai_player)) {
+            cout << "Partita finita! " << human_player->name << " ha vinto!" << endl;
+            game_over = true;
+            break;
+        }
+
+        // Conferma per il turno dell'IA (se CONFIRM_NEXT_TURN e' true)
+        confirmAINextTurn();
+
+        // Turno dell'AI
+        ai_player->aiturno(ai_player, human_player);
+
+        // Verifica se la partita e' finita dopo il turno dell'AI
+        if (ai_player->checkWin(human_player)) {
+            cout << "Partita finita! " << "I robot hanno dominato sugli umani" << endl;
+            game_over = true;
+        }
+    }
+}
+
+// Implementazione del turno di gioco per l'AI
+void Player::aiturno(Player *player, Player *enemy) {
+    string sunkenOne = "";
+    cout << "TURNO DELL'AI " << endl;
+
+    bool keepTurn = true; // Flag per continuare il turno
+
+    while (keepTurn) {
+        char result = player->AIstrikeBoard(player, enemy);
+        sunkenOne = player->isSank(enemy, player);
+
+        if (sunkenOne != "error") {
+            char temp = getChar(sunkenOne);
+            sunkenOne = getString(temp);
+            cout << "MI SPIACE ! L'AI ha affondato questa imbarcazione: " << sunkenOne << "!" << endl;
+        }
+
+        // Verifica la vittoria prima di passare al turno successivo
+        if (player->checkWin(enemy)) {
+            cout << "Partita finita! " << "I robot hanno dominato sugli umani" << endl;
+            return;
+        }
+
+        // Determina se il turno deve continuare
+        if (CONTINUOUS_TURNS) {
+            keepTurn = (result == '@'); // Continua se ha colpito una nave
+        } else {
+            keepTurn = false;
+        }
+    }
+
+    cout << "Fine del turno di " << "AI" << "." << endl;
+
+    confirmNextTurn();
+    cout << "-----------------------------------" << endl;
+}
+
+// implementare il meotodo per gestire gli spari sulla board per l'AI
+char Player::AIstrikeBoard(Player *player, Player *enemy) {
+    // Scelta le coordinate casuali
+    int x, y;
+    if (!player->huntMode) {
+        bestMove(player, x, y);
+    } else {
+        // Cerca le celle adiacenti all'ultimo colpo che ha colpito una nave
+        vector<pair<int, int>> adjacentCells;
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                int newX = player->lastHitX + i;
+                int newY = player->lastHitY + j;
+                if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10 && player->boardMem[newX][newY] != 'X' && player->boardMem[newX][newY] != '@') {
+                    adjacentCells.push_back(make_pair(newX, newY));
+                }
+            }
+        }
+
+        if (!adjacentCells.empty()) {
+            int randomIndex = rand() % adjacentCells.size();
+            x = adjacentCells[randomIndex].first;
+            y = adjacentCells[randomIndex].second;
+        } else {
+            // Nessuna cella adiacente disponibile, torna alla modalita' normale
+            player->huntMode = false;
+            bestMove(player, x, y);
+        }
+    }
+
+    // STRIKES HANDLING
+    if (enemy->board[x][y] == 'O') { // CASE 1 PLAYER HITS THE TARGET
+        // Gestiamo tutte le board
+        enemy->board[x][y] = '@';
+        player->boardMem[x][y] = '@';
+        cout << "BINGO! L'AI ha colpito una nave " << endl;
+        player->huntMode = true;
+        player->lastHitX = x;
+        player->lastHitY = y;
+        return '@';
+    } else if (enemy->board[x][y] == '~') { // CASE 2 PLAYER HITS WATER
+        enemy->board[x][y] = 'X';
+        player->boardMem[x][y] = 'X';
+        cout << "Ragazzo Fortunato !! L'AI ha colpito il mare " << endl;
+        return 'X';
+    } else if (enemy->board[x][y] == '@') { // CASE 3 PLAYER HITS A SUNKEN PORTION OF A SHIP
+        cout << "Sappiamo che i robot non ci sostituiranno, l'AI ha colpito una nave gia' colpita in precedenza" << endl;
+        return 'X';
+    } else { // CASE 4 PLAYER HITS AN ALREADY SHOT PORTION OF WATER
+        cout << "Sappiamo che i robot non ci sostituiranno, l'AI ha colpito lo stesso punto" << endl;
+        return 'X';
+    }
+}
+
+
+
+////// FUNZIONI DI STAMPA //////
 
 // Implementazione della funzione per stampare la mappa principale (board)
 void Player::stampaBoard() const {
@@ -811,20 +1057,92 @@ void Player::stampaBoardSunk() const {
   }
 }
 
+// Implementazione della funzione per stampare la una mappa di gioco (M)
+void Player::stampa(char M[10][10]) { // Aiuto del signor GPT in questa parte per lo stile
+    clearScreen();
+    cout << "   ";
+    for (int c = 0; c < 10; c++) {
+        cout << " " << c;
+    }
+    cout << endl;
+    cout << "  ";
+    for (int i = 0; i < 10; i++) {
+        cout << "===";
+    }
+    cout << "===" << endl;
 
-/* Navi
-- 1 portaerei (5 celle)                         P ///
-- 1 corazzata (4 celle)                         C ///
-- 1 incrociatore (3 celle)                      I ///
-- 1 cacciatorpediniere (3 celle ciascuno)       D ///
-- 1 cacciatorpedinierex (3 celle ciascuno)      N ///
-- 1 sottomarino (2 cella ciascuno)              S ///
-- 1 sottomarinox (2 cella ciascuno)             R ///
+    for (int i = 0; i < 10; i++) {
+        cout << i << " ";
+        cout << "|";
+        for (int j = 0; j < 10; j++) {
+            cout << " "
+                 << M[i][j];
+        }
+        cout << " |" << endl;
+    }
 
-CARATTERI
-- Nave: `O`
-- Acqua: `~`
-- Colpito: `X`
-- NaveColpita= `@`
-- NaveAffondata= `#`
-*/
+    cout << "  ";
+    for (int i = 0; i < 10; i++) {
+        cout << "===";
+    }
+    cout << "===" << endl;
+}
+
+// Implementazione della funzione per stampare la mappa principale e della mappa dove si segnano i colpi (board & boardMem)
+void Player::stampaBoardAndMem(Player *player) {
+    // Stampa la mappa del giocatore
+    cout << "La tua mappa:" << endl;
+    cout << "   ";
+    for (int c = 0; c < 10; c++) {
+        cout << " " << c;
+    }
+    cout << endl;
+    cout << "  ";
+    for (int i = 0; i < 10; i++) {
+        cout << "===";
+    }
+    cout << "===" << endl;
+
+    for (int i = 0; i < 10; i++) {
+        cout << i << " ";
+        cout << "|";
+        for (int j = 0; j < 10; j++) {
+            cout << " " << player->board[i][j];
+        }
+        cout << " |" << endl;
+    }
+
+    cout << "  ";
+    for (int i = 0; i < 10; i++) {
+        cout << "===";
+    }
+    cout << "===" << endl;
+
+    // Stampa la mappa della memoria del giocatore
+    cout << "Cosa sappiamo sull'avversario:" << endl;
+    cout << "   ";
+    for (int c = 0; c < 10; c++) {
+        cout << " " << c;
+    }
+    cout << endl;
+    cout << "  ";
+    for (int i = 0; i < 10; i++) {
+        cout << "===";
+    }
+    cout << "===" << endl;
+
+    for (int i = 0; i < 10; i++) {
+        cout << i << " ";
+        cout << "|";
+        for (int j = 0; j < 10; j++) {
+            cout << " " << player->boardMem[i][j];
+        }
+        cout << " |" << endl;
+    }
+
+    cout << "  ";
+    for (int i = 0; i < 10; i++) {
+        cout << "===";
+    }
+    cout << "===" << endl;
+}
