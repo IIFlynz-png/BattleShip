@@ -2,6 +2,7 @@
 #define BATTLESHIP_H
 #include <string>
 #include <utility>
+#include <vector>
 
 
 using namespace std;
@@ -79,11 +80,16 @@ public:
     void AIautoPlacement(Player *player);
     void testAI();
     bool AIHandlePlacement(Player *player, const string &type, int x, int y, const string &config);
-
+    void updateMontecarloSim(Player *player, Player *enemy);
     bool huntMode;
     int lastHitX, lastHitY;
+    friend vector<pair<int, int>> getAdjacentSpiral(int x, int y, Player *player);
+    
 
 };
+
+vector<pair<int, int>> getAdjacentSpiral(int x, int y, Player *player);
+
 
 string lowerString(const string &str);
 int shipSize(const string &tipo);

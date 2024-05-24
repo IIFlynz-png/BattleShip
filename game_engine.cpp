@@ -391,17 +391,19 @@ void Player::turno(Player *player, Player *enemy) {
 
 // Implementazione del metodo per verificare la vittoria di uno dei 2 Player
 bool Player::checkWin(const Player *player) {
-    // Controlla se nella board ci sono caratteri diversi da  '~', 'X', or '@'
+    // Iteriamo su ogni cella della board
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            char cell = player->board[i][j];
-            if (cell != '~' && cell != 'X' && cell != '@') {
-                return false;
+            // Se troviamo un 'O', la vittoria non è ancora stata raggiunta
+            if (player->board[i][j] == 'O') {
+                return false; 
             }
         }
     }
-    return true;
+    // Se non abbiamo trovato alcun 'O', il giocatore ha vinto
+    return true; 
 }
+
 
 // Implementazione del metodo per verificare se una nave e' affondata
 string Player::isSank(Player *player, Player *enemy) const {
@@ -763,22 +765,39 @@ void Player::montecarloSim(Player *player) {
 
 // Implementazione del metodo di selezione della migliore mossa
 void Player::bestMove(Player *player, int &x, int &y) {
-    int maxVal = player->validCoords[0][0];
-    x = 0;
-    y = 0;
-    // Iterate over the matrix to find the maximum value
-    for (int i = 0; i < 10; ++i) {
-        for (int j = 0; j < 10; ++j) {
-            if (player->validCoords[i][j] > maxVal) {
-                maxVal = player->validCoords[i][j];
-                x = i;
-                y = j;
+    int maxVal = -1;
+    x = -1;
+    y = -1;
+    bool found = false;
+
+    // Search for the best move
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            // Check if the AI has already shot at these coordinates
+            if (player->boardMem[i][j] != '!') {
+                // If the AI has not shot here and the value is greater than maxVal, update maxVal and the best coordinates
+                if (player->validCoords[i][j] > maxVal) {
+                    maxVal = player->validCoords[i][j];
+                    x = i;
+                    y = j;
+                    found = true;
+                }
             }
         }
     }
-    // Set the found position to -1
-    player->validCoords[x][y] = -1;
+
+    // If a valid move was found, mark it as shot
+    if (found) {
+        player->validCoords[x][y] = -1; // Mark the cell as shot
+    } else {
+        player->huntMode = false; // Reset huntMode if no valid move was found
+    }
 }
+
+
+
+
+
 
 // Implementazione del metodo di piazzamento pseudocasuale per le navi per la simulazione di montecarlo
 void Player::AIautoPlacement(Player *player) {
@@ -931,7 +950,7 @@ void Player::aiturno(Player *player, Player *enemy) {
     string sunkenOne = "";
     cout << "TURNO DELL'AI " << endl;
 
-    bool keepTurn = true; // Flag per continuare il turno
+    bool keepTurn = true;
 
     while (keepTurn) {
         char result = player->AIstrikeBoard(player, enemy);
@@ -940,83 +959,137 @@ void Player::aiturno(Player *player, Player *enemy) {
         if (sunkenOne != "error") {
             char temp = getChar(sunkenOne);
             sunkenOne = getString(temp);
-            cout << "MI SPIACE ! L'AI ha affondato questa imbarcazione: " << sunkenOne << "!" << endl;
+            cout << "MI SPIACE! L'AI ha affondato questa imbarcazione: " << sunkenOne << "!" << endl;
         }
 
-        // Verifica la vittoria prima di passare al turno successivo
         if (player->checkWin(enemy)) {
-            cout << "Partita finita! " << "I robot hanno dominato sugli umani" << endl;
+            cout << "Partita finita! I robot hanno dominato sugli umani" << endl;
             return;
         }
 
-        // Determina se il turno deve continuare
         if (CONTINUOUS_TURNS) {
-            keepTurn = (result == '@'); // Continua se ha colpito una nave
+            keepTurn = (result == '@');
         } else {
             keepTurn = false;
         }
     }
 
-    cout << "Fine del turno di " << "AI" << "." << endl;
-
+    player->updateMontecarloSim(player, enemy);
+    cout << "Fine del turno dell'AI." << endl;
     confirmNextTurn();
     cout << "-----------------------------------" << endl;
 }
 
+
 // implementare il meotodo per gestire gli spari sulla board per l'AI
 char Player::AIstrikeBoard(Player *player, Player *enemy) {
-    // Scelta le coordinate casuali
     int x, y;
-    if (!player->huntMode) {
-        bestMove(player, x, y);
-    } else {
-        // Cerca le celle adiacenti all'ultimo colpo che ha colpito una nave
-        vector<pair<int, int>> adjacentCells;
-        for (int i = -1; i <= 1; i++) {
-            for (int j = -1; j <= 1; j++) {
-                int newX = player->lastHitX + i;
-                int newY = player->lastHitY + j;
-                if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10 && player->boardMem[newX][newY] != 'X' && player->boardMem[newX][newY] != '@') {
-                    adjacentCells.push_back(make_pair(newX, newY));
-                }
+    bool validShot = false;
+
+    while (!validShot) {
+        if (!player->huntMode) {
+            bestMove(player, x, y);
+        } else {
+            vector<pair<int, int>> adjacentCells = getAdjacentSpiral(player->lastHitX, player->lastHitY, player);
+            if (!adjacentCells.empty()) {
+                // Seleziona una cella casuale dal vettore
+                pair<int, int> selectedCell = adjacentCells[rand() % adjacentCells.size()];
+                x = selectedCell.first;
+                y = selectedCell.second;
+            } else {
+                // Se non ci sono celle adiacenti disponibili, scegli una cella casuale
+                do {
+                    x = getRandCoords();
+                    y = getRandCoords();
+                } while (player->boardMem[x][y] != '~');
             }
         }
 
-        if (!adjacentCells.empty()) {
-            int randomIndex = rand() % adjacentCells.size();
-            x = adjacentCells[randomIndex].first;
-            y = adjacentCells[randomIndex].second;
+        // Verifica se l'AI non ha ancora sparato in queste coordinate
+        if (player->boardMem[x][y] == '~') {
+            validShot = true;
         } else {
-            // Nessuna cella adiacente disponibile, torna alla modalita' normale
+            // Se l'AI ha già sparato qui, deve scegliere un'altra cella
             player->huntMode = false;
-            bestMove(player, x, y);
         }
     }
 
-    // STRIKES HANDLING
-    if (enemy->board[x][y] == 'O') { // CASE 1 PLAYER HITS THE TARGET
-        // Gestiamo tutte le board
+    if (enemy->board[x][y] == 'O') {
         enemy->board[x][y] = '@';
-        player->boardMem[x][y] = '@';
-        cout << "BINGO! L'AI ha colpito una nave " << endl;
+        player->boardMem[x][y] = '!';
+        player->validCoords[x][y] = -1;
         player->huntMode = true;
         player->lastHitX = x;
         player->lastHitY = y;
+        cout << "Bingo! L'AI ha colpito una delle tue navi, umano!" << endl;
         return '@';
-    } else if (enemy->board[x][y] == '~') { // CASE 2 PLAYER HITS WATER
+    } else if (enemy->board[x][y] == '~') {
         enemy->board[x][y] = 'X';
-        player->boardMem[x][y] = 'X';
-        cout << "Ragazzo Fortunato !! L'AI ha colpito il mare " << endl;
-        return 'X';
-    } else if (enemy->board[x][y] == '@') { // CASE 3 PLAYER HITS A SUNKEN PORTION OF A SHIP
-        cout << "Sappiamo che i robot non ci sostituiranno, l'AI ha colpito una nave gia' colpita in precedenza" << endl;
-        return 'X';
-    } else { // CASE 4 PLAYER HITS AN ALREADY SHOT PORTION OF WATER
-        cout << "Sappiamo che i robot non ci sostituiranno, l'AI ha colpito lo stesso punto" << endl;
+        player->boardMem[x][y] = '!';
+        player->validCoords[x][y] = -1;
+        cout << "Ahah, l'AI ha mancato il bersaglio! Forse dovresti insegnarle a mirare meglio!" << endl;
         return 'X';
     }
+
+    // Valore di ritorno predefinito
+    return '!';
 }
 
+vector<pair<int, int>> getAdjacentSpiral(int x, int y, Player *player) {
+    vector<pair<int, int>> adjacentCells;
+
+    // Define the spiral coordinates relative to (x, y)
+    vector<pair<int, int>> spiralCoords = {
+        {x, y+1}, {x-1, y}, {x, y-1}, {x+1, y}, {x-1, y+1}, {x+1, y+1}, {x-1, y-1}, {x+1, y-1},
+        {x-2, y}, {x, y-2}, {x+2, y}, {x, y+2}, {x-2, y-1}, {x-1, y-2}, {x+1, y-2}, {x+2, y-1},
+        {x-2, y+1}, {x+2, y+1}, {x-1, y+2}, {x+1, y+2}
+    };
+
+    // Check each coordinate in the spiral
+    for (auto coord : spiralCoords) {
+        int i = coord.first;
+        int j = coord.second;
+
+        // Check if the coordinates are within the board and the AI has not already shot there
+        if (i >= 0 && i < 10 && j >= 0 && j < 10 && player->boardMem[i][j] != '!') {
+            adjacentCells.push_back({i, j});
+        }
+    }
+
+    return adjacentCells;
+}
+
+void Player::updateMontecarloSim(Player *player, Player *enemy) {
+    // Resetta la simulazione
+    initSimulation(player);
+    initCoords(player);
+
+    // Aggiorna la simulazione con le informazioni sulle celle colpite e mancate
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            if (enemy->board[i][j] == '@') {
+                player->validCoords[i][j] = 100; // Cella colpita, assegna un valore elevato
+            } else if (enemy->board[i][j] == 'X') {
+                player->validCoords[i][j] = -1; // Cella mancata, assegna un valore negativo
+            } else if (enemy->board[i][j] == '!' || player->boardMem[i][j] == '!') {
+                player->validCoords[i][j] = -1; // Cella già colpita, assegna un valore negativo
+            }
+        }
+    }
+
+    // Esegui la simulazione di Montecarlo aggiornata
+    for (int i = 0; i < 1000; i++) {
+        initSimulation(player);
+        player->AIautoPlacement(player);
+        for (int j = 0; j < 10; j++) {
+            for (int k = 0; k < 10; k++) {
+                if (player->simBoard[j][k] == 'O' && player->validCoords[j][k] != -1) {
+                    player->validCoords[j][k] += 1;
+                }
+            }
+        }
+    }
+}
 
 
 ////// FUNZIONI DI STAMPA //////
