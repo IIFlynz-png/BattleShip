@@ -1,5 +1,4 @@
 # BattleShip
-# Titolo del Progetto
 
 Questo progetto è un gioco di Battaglia Navale sviluppato in C++. Il gioco supporta sia la modalità giocatore contro giocatore che la modalità giocatore contro intelligenza artificiale.
 
@@ -22,7 +21,7 @@ git clone https://github.com/IIFlynz-png/BattleShip
 Dopo aver clonato la repository, naviga nella directory del progetto e compila il codice utilizzando il tuo compilatore C++.
 
 ```bash
-cd repository
+cd directory
 g++ -o game main.cpp game_engine.cpp
 ```
 
