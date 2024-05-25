@@ -455,70 +455,133 @@ void replace(char board[10][10], const char replacedChar, const char newChar) {
 
 // Implementazione del metodo per la scelta della nave da posizionare
 string Player::scegliNave(Player *player) {
+
   string nome;
+
   bool naveValida = false; // Flag per controllare se la nave e' valida
 
   cout << "Quale nave posizioniamo, capitano?" << endl;
+
   cout << "Portaerei"
+
        << " (Rimanenti: " << this->portaerei << ")" << endl;
+
   cout << "Corazzata"
+
        << " (Rimanenti: " << this->corazzata << ")" << endl;
+
   cout << "Incrociatore"
+
        << " (Rimanenti: " << this->incrociatore << ")" << endl;
+
   cout << "Sottomarino"
+
        << " (Rimanenti: " << this->sottomarino + this->sottomarinox << ")"
+
        << endl;
+
   cout << "Cacciatorpediniere"
+
        << " (Rimanenti: "
+
        << this->cacciatorpediniere + this->cacciatorpedinierex << ")" << endl;
 
   do {
+
+    int flag = 1 ;
+
     cout << "Inserisca il nome della nave: ";
+
     cin >> nome;
+
     nome = lowerString(nome);
 
     if (nome != "portaerei" && nome != "corazzata" && nome != "incrociatore" &&
+
         nome != "sottomarino" && nome != "cacciatorpediniere") {
+
       cout << "Capitano, si e' percaso ubriacato, non abbiamo questa nave!"
+
            << endl;
+
       cout << "Inserisca un nome valido." << endl << endl;
+
     } else if ((nome == "portaerei" && this->portaerei == 0) ||
+
                (nome == "corazzata" && this->corazzata == 0) ||
+
                (nome == "incrociatore" && this->incrociatore == 0) ||
+
                (nome == "sottomarino" && this->sottomarino == 0 &&
-                this->sottomarinox == 0) ||
-               (nome == "cacciatorpediniere" && this->cacciatorpediniere == 0 &&
-                this->cacciatorpedinierex == 0)) {
-      cout << "Mi dispiace, capitano. Non abbiamo più " << nome
-           << " a disposizione." << endl;
-    } else { // Nave valida
+
+                this->sottomarinox > 0)) {
+
+      nome = "sottomarinox";
+
       naveValida = true;
+
+    } else if (nome == "cacciatorpediniere" && this->cacciatorpediniere == 0 &&
+
+               this->cacciatorpedinierex > 0) {
+
+      nome = "cacciatorpedinierex";
+
+      naveValida = true;
+
+    } else if ((nome == "sottomarino" && this->sottomarino == 0 &&
+
+                this->sottomarinox == 0) ||
+
+               (nome == "cacciatorpediniere" && this->cacciatorpediniere == 0 &&
+
+                this->cacciatorpedinierex == 0)) {
+
+      cout << "Mi dispiace, capitano. Non abbiamo più " << nome
+
+           << " a disposizione." << endl;
+
+    } else { // Nave valida
+
+      naveValida = true;
+
     }
+
   } while (!naveValida); // Continua a chiedere finché non viene inserita una nave valida
 
   // Aggiorna il numero di navi rimanenti solo se la nave e' valida
+
   if (nome == "portaerei") {
+
     this->portaerei--;
+
   } else if (nome == "corazzata") {
+
     this->corazzata--;
+
   } else if (nome == "incrociatore") {
+
     this->incrociatore--;
+
   } else if (nome == "sottomarino") {
-    if (this->sottomarino > 0) {
-      this->sottomarino--;
-    } else {
-      this->sottomarinox--;
-    }
+
+    this->sottomarino--;
+
+  } else if (nome == "sottomarinox") {
+
+    this->sottomarinox--;
+
   } else if (nome == "cacciatorpediniere") {
-    if (this->cacciatorpediniere > 0) {
-      this->cacciatorpediniere--;
-    } else {
-      this->cacciatorpedinierex--;
-    }
+
+    this->cacciatorpediniere--;
+
+  } else if (nome == "cacciatorpedinierex") {
+
+    this->cacciatorpedinierex--;
+
   }
 
   return nome;
-}
+  }
 
 // Implementazione del metodo per gestire il piazzamento manuale delle na sulla board
 void Player::HandlePlacement(Player *player, const string &shiptype) {
